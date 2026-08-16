@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Orça Obra</title>
+<meta name="theme-color" content="#FAFAF8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Orça Obra">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FAFAF8; --bg-2:#F2F1EC;
+    --panel:rgba(255,255,255,0.86); --panel-solid:#FFFFFF; --panel-2:#F4F3EF;
+    --border:#E7E4DD; --border-strong:#D6D2C8;
+    --text:#17181A; --text-dim:#68686A; --text-faint:#9C9A94;
+    --accent:#12312B; --accent-soft:rgba(18,49,43,0.07);
+    --indigo:#8A6A3E; --amber:#AD8A52; --danger:#B23B2E; --success:#2F6F4E;
+    --radius:14px; --blur:24px;
+    --radius-sm:10px;
+    --shadow-card:0 1px 2px rgba(23,24,26,0.04), 0 8px 28px rgba(23,24,26,0.06);
+    --shadow-glow:0 0 0 1px rgba(18,49,43,0.18);
+    --shadow-pop:0 -16px 48px rgba(23,24,26,0.12);
+    --shadow-elevated:0 4px 16px rgba(23,24,26,0.08), 0 1px 3px rgba(23,24,26,0.05);
+  }
+  ::selection{background:var(--accent-soft);color:var(--accent);}
+  /* Compact text utilities */
+  .text-strong{font-weight:600;}
+  .text-dim{color:var(--text-dim);}
+  .text-faint{color:var(--text-faint);}
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;overscroll-behavior:none;}
+  body{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(18,49,43,0.035), transparent 42%),
+      radial-gradient(circle at 90% 20%, rgba(173,138,82,0.05), transparent 45%),
+      var(--bg);
+    background-attachment:fixed; color:var(--text); font-family:'Inter',sans-serif;
+    -webkit-tap-highlight-color:transparent; min-height:100vh;
+  }
+  .num{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.1px;}
+  ::selection{background:var(--accent-soft);color:var(--accent);}
+
+  header{
+    position:relative; padding:22px 16px 0 16px;
+    background:var(--panel); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+    border-bottom:1px solid var(--border);
+  }
+  header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--border-strong);}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px;position:relative;z-index:1;}
+  .brand-mark{width:38px;height:38px;flex-shrink:0;border-radius:9px;}
+  .brand-text{flex:1;min-width:0;}
+  .brand-name-row{display:flex;align-items:baseline;gap:8px;}
+  #company-name{font-family:'Newsreader',serif;font-style:italic;font-weight:600;font-size:20px;margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .edit-name{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;}
+  .edit-name svg{width:13px;height:13px;}
+  .brand-text p{margin:2px 0 0 0;font-size:10.5px;color:var(--text-faint);letter-spacing:0.8px;text-transform:uppercase;}
+  .share-btn{
+    display:flex;align-items:center;gap:6px;background:var(--accent);border:1px solid var(--accent);
+    color:#F4F1E9;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0;
+  }
+  .share-btn svg{width:14px;height:14px;}
+
+  nav{display:flex;gap:0;position:relative;z-index:1;overflow-x:auto;}
+  nav button{
+    flex:1;min-width:72px;background:transparent;border:none;color:var(--text-faint);
+    font-family:'Inter',sans-serif;font-weight:500;font-size:12px;letter-spacing:0.3px;
+    padding:12px 8px 13px 8px;cursor:pointer;border-bottom:2px solid transparent;
+    transition:color .15s ease,border-color .15s ease;white-space:nowrap;position:relative;
+    text-transform:uppercase;
+  }
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
+  nav button:hover:not(.active){color:var(--text);}
+  .nav-badge{
+    display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;
+    background:var(--amber);color:#FFFFFF;font-size:10px;font-weight:700;border-radius:20px;margin-left:4px;
+  }
+
+  main{padding:20px 16px 104px 16px;max-width:760px;margin:0 auto;}
+  .tab{display:none;}
+  .tab.active{display:block;}
+
+  .card{background:var(--panel-solid);border-radius:var(--radius);padding:18px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow-card);}
+  .empty{text-align:center;padding:52px 20px;}
+  .empty-icon{width:54px;height:54px;opacity:1;margin-bottom:10px;border-radius:12px;}
+  .empty p{margin:4px 0;font-size:13.5px;color:var(--text-dim);}
+  .empty .lead{font-family:'Newsreader',serif;font-style:italic;color:var(--text);font-size:19px;font-weight:600;margin-top:8px;}
+
+  .proj-card{cursor:pointer;transition:border-color .15s ease, box-shadow .15s ease;position:relative;}
+  .proj-card:active{border-color:var(--border-strong);box-shadow:var(--shadow-glow);}
+  .proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .proj-name{font-family:'Newsreader',serif;font-size:17px;font-weight:600;margin:0 0 3px 0;}
+  .proj-meta{font-size:12.5px;color:var(--text-dim);margin:0;}
+  .proj-total{font-size:17px;color:var(--accent);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .proj-tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .tag{font-size:10.5px;padding:4px 10px;border-radius:20px;background:var(--bg-2);color:var(--indigo);font-weight:500;border:1px solid var(--border);letter-spacing:0.2px;text-transform:uppercase;}
+  .tag-pending{background:rgba(173,138,82,0.10);color:var(--amber);border-color:rgba(173,138,82,0.3);}
+  .proj-desc{font-size:13px;color:var(--text-dim);margin-top:9px;line-height:1.5;}
+
+  button{font-family:inherit;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:9px;
+    border:1px solid var(--border-strong);background:var(--panel-solid);color:var(--text);font-size:14px;font-weight:500;
+    cursor:pointer;min-height:47px;transition:opacity .15s ease;}
+  .btn:active{opacity:0.75;}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#F4F1E9;font-weight:600;}
+  .btn-primary:hover{background:#0D2620;}
+  .btn-amber{background:var(--amber);border-color:var(--amber);color:#fff;}
+  .btn-danger{background:transparent;border-color:rgba(178,59,46,0.4);color:var(--danger);}
+  .btn-ghost{background:transparent;border-color:var(--border-strong);color:var(--text-dim);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:9px 12px;min-height:38px;font-size:13px;}
+  .fab-row{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,var(--bg) 60%,transparent);}
+  .fab-row .btn{max-width:760px;margin:0 auto;}
+
+  label{display:block;font-size:11.5px;color:var(--text-faint);margin:0 0 6px 2px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;}
+  input,select,textarea{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+    padding:12px 12px;border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;}
+  textarea{resize:vertical;min-height:70px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  input::placeholder,textarea::placeholder{color:var(--text-faint);}
+  select option{background:#fff;color:var(--text);}
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;}
+  h2.section{font-family:'Newsreader',serif;font-style:italic;font-size:16px;font-weight:600;color:var(--text);
+    margin:28px 0 13px 0;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+  h2.section::before{content:'';width:5px;height:5px;background:var(--amber);border-radius:50%;flex-shrink:0;}
+  h2.section:first-child{margin-top:0;}
+
+  .item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:10px;margin-bottom:8px;gap:10px;}
+  .item-row .desc{font-size:14px;font-weight:500;}
+  .item-row .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .item-row .val{font-size:14.5px;color:var(--accent);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .item-row .del{background:none;border:none;color:var(--text-faint);font-size:20px;cursor:pointer;padding:4px 6px;}
+
+  .total-box{background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:var(--radius);padding:18px;margin-top:16px;position:relative;box-shadow:var(--shadow-card);}
+  .total-box::before{content:'';position:absolute;top:0;left:18px;right:18px;height:2px;background:var(--amber);}
+  .total-box .line{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dim);padding:4px 0;}
+  .total-box .final{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:11px;border-top:1px dashed var(--border);}
+  .total-box .final .lbl{font-family:'Newsreader',serif;font-style:italic;font-size:14.5px;font-weight:600;}
+  .total-box .final .amt{font-size:27px;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-weight:600;}
+
+  .cat-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
+  .cat-row .info{flex:1;min-width:0;}
+  .cat-row .info .name{font-size:14px;font-weight:500;}
+  .cat-row .info .meta{font-size:12px;color:var(--text-dim);}
+  .cat-row input{width:90px;text-align:right;padding:8px;font-size:14px;}
+  .cat-row .del{background:none;border:none;color:var(--text-faint);font-size:19px;cursor:pointer;padding:2px 4px;display:flex;align-items:center;}
+  .cat-row [data-mat-search]{color:var(--accent);}
+
+  .overlay{position:fixed;inset:0;background:rgba(23,24,26,0.35);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--panel-solid);width:100%;max-width:760px;border-radius:20px 20px 0 0;
+    padding:24px 20px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-pop);border-top:1px solid var(--border-strong);}
+  .modal h3{font-family:'Newsreader',serif;font-style:italic;font-size:20px;font-weight:600;margin:0 0 4px 0;}
+  .modal .sub-h{font-size:13px;color:var(--text-dim);margin:0 0 16px 0;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .modal-actions .btn{flex:1;min-width:120px;}
+
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .info-grid .box{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;}
+  .info-grid .box .k{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
+  .info-grid .box .v{font-size:14px;font-weight:500;}
+  .info-grid .box.full{grid-column:1/-1;}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--text);color:#FAFAF8;
+    padding:11px 20px;border-radius:9px;font-size:13.5px;font-weight:500;z-index:60;opacity:0;pointer-events:none;
+    transition:opacity .25s ease;box-shadow:var(--shadow-pop);}
+  .toast.show{opacity:1;}
+
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .stat-box{background:var(--panel-solid);border:1px solid var(--border);border-radius:var(--radius);padding:17px;}
+  .stat-box .num-big{font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;color:var(--accent);}
+  .stat-box .lbl{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.5px;margin-top:5px;}
+  .bar-row{margin-bottom:13px;}
+  .bar-row .bar-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
+  .bar-row .bar-top .n{color:var(--text-dim);}
+  .bar-track{height:6px;border-radius:6px;background:var(--bg-2);overflow:hidden;}
+  .bar-fill{height:100%;background:var(--accent);border-radius:6px;}
+
+  .stat-box .breakdown{display:flex;flex-direction:column;gap:7px;}
+  .stat-box .bd-row{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dim);}
+  .stat-box .bd-row .num{color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;}
+
+  /* agenda */
+  .agenda-day{margin-bottom:20px;}
+  .agenda-date{font-family:'Newsreader',serif;font-style:italic;font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
+  .agenda-events{display:flex;flex-direction:column;gap:9px;}
+  .agenda-card{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);transition:border-color .15s, transform .08s;}
+  .agenda-card:active{transform:scale(0.99);}
+  .agenda-card:hover{border-color:var(--border-strong);}
+  .agenda-card .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+  .agenda-body{flex:1;min-width:0;}
+  .agenda-title{font-size:14px;font-weight:600;color:var(--text);}
+  .agenda-sub{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+
+  .loading{text-align:center;padding:60px 20px;color:var(--text-faint);font-size:13.5px;}
+
+  @media(min-width:640px){ main{padding-top:24px;} }
+</style>
+</head>
+<body>
+<script>
+  const _MOCK_CATALOG = {
+    catalogo: {
+      services: [
+        { id:'s-piso', name:'Pavimento', laborPercent:90, unit:'m²' },
+        { id:'s-pintura', name:'Pintura', laborPercent:250, unit:'m²' },
+        { id:'s-parede', name:'Alvenaria / parede', laborPercent:60, unit:'m²' },
+        { id:'s-telhado', name:'Telhado', laborPercent:60, unit:'m²' },
+        { id:'s-eletrica', name:'Eletricidade', laborPercent:80, unit:'ponto' },
+        { id:'s-hidraulica', name:'Canalização', laborPercent:80, unit:'ponto' }
+      ],
+      materials: [
+        { id:'m-porc', name:'Pavimento porcelânico padrão', serviceId:'s-piso', unit:'m²', price:15 },
+        { id:'m-ceram', name:'Pavimento cerâmico económico', serviceId:'s-piso', unit:'m²', price:8 },
+        { id:'m-tinta-lat', name:'Tinta acrílica interior (2 demãos)', serviceId:'s-pintura', unit:'m²', price:3 },
+        { id:'m-tijolo', name:'Tijolo / bloco (m² de parede)', serviceId:'s-parede', unit:'m²', price:25 },
+        { id:'m-telha', name:'Telha cerâmica', serviceId:'s-telhado', unit:'m²', price:20 },
+        { id:'m-ponto-el', name:'Ponto elétrico completo', serviceId:'s-eletrica', unit:'ponto', price:45 },
+        { id:'m-ponto-hid', name:'Ponto de canalização completo', serviceId:'s-hidraulica', unit:'ponto', price:60 }
+      ]
+    },
+    empresa: { nome:'Sua Construtora' }
+  };
+  let _MOCK_AGENDA = [
+    { id:'a1', pedidoId:3, titulo:'Visita técnica', data: new Date(Date.now() + 86400e3*2).toISOString().slice(0,10), tipo:'visita', nota:'Levar medição.' },
+    { id:'a2', pedidoId:3, titulo:'Início da obra', data: new Date(Date.now() + 86400e3*5).toISOString().slice(0,10), tipo:'obra', nota:'' }
+  ];
+  let _MOCK_PEDIDOS = [
+    {
+      id:1, created_at:new Date(Date.now()-3600e3).toISOString(), nome_cliente:'Ana Ferreira', telefone:'912 345 678',
+      morada:'Rua das Flores 12, Torres Novas', tipo_servico:'Pavimento, Pintura',
+      descricao:'Substituir o piso da sala e pintar o corredor todo.', observacoes_cliente:'Disponível para visita ao fim de semana.',
+      status:'pendente', itens:[
+        { id:'a', serviceId:'s-piso', materialId:'m-porc', desc:'Pavimento porcelânico padrão', quantity:22, unit:'m²', unitPrice:15, laborPercent:90 },
+        { id:'b', serviceId:'s-pintura', materialId:'m-tinta-lat', desc:'Tinta acrílica interior (2 demãos)', quantity:14, unit:'m²', unitPrice:3, laborPercent:250 }
+      ], confirmado_em:null, nome_orcamento:null, observacoes_internas:null
+    },
+    {
+      id:2, created_at:new Date(Date.now()-7200e3).toISOString(), nome_cliente:'Pedro Silva', telefone:'935 111 222',
+      morada:'Av. Central 88, Santarém', tipo_servico:'Eletricidade',
+      descricao:'Preciso de rever a instalação elétrica de 3 divisões.', observacoes_cliente:'',
+      status:'pendente', itens:[
+        { id:'c', serviceId:'s-eletrica', materialId:'m-ponto-el', desc:'Ponto elétrico completo', quantity:6, unit:'ponto', unitPrice:45, laborPercent:80 }
+      ], confirmado_em:null, nome_orcamento:null, observacoes_internas:null
+    },
+    {
+      id:3, created_at:new Date(Date.now()-86400e3*3).toISOString(), nome_cliente:'Mariana Costa', telefone:'966 555 000',
+      morada:'Rua do Sol 5, Torres Novas', tipo_servico:'Alvenaria / parede',
+      descricao:'Levantar uma parede divisória na garagem.', observacoes_cliente:'',
+      status:'confirmado', itens:[
+        { id:'d', serviceId:'s-parede', materialId:'m-tijolo', desc:'Tijolo / bloco (m² de parede)', quantity:18, unit:'m²', unitPrice:25, laborPercent:60 }
+      ], confirmado_em:new Date(Date.now()-86400e3*2).toISOString(), nome_orcamento:'Parede garagem — Mariana Costa',
+      observacoes_internas:'Combinado início dia 20.'
+    }
+  ];
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = async (url, opts) => {
+    const method = (opts && opts.method) || 'GET';
+    if(url === '/api/config' && method === 'GET'){
+      return { ok:true, json: async () => _MOCK_CATALOG };
+    }
+    if(url === '/api/pedidos' && method === 'GET'){
+      return { ok:true, json: async () => _MOCK_PEDIDOS };
+    }
+    if(url === '/api/pedidos/manual' && method === 'POST'){
+      const body = JSON.parse(opts.body);
+      const novo = { id: Date.now(), created_at:new Date().toISOString(), confirmado_em:new Date().toISOString(), status:'confirmado', observacoes_internas:'', ...body };
+      _MOCK_PEDIDOS.unshift(novo);
+      return { ok:true, json: async () => novo };
+    }
+    if(url.startsWith('/api/pedidos/') && method === 'PATCH'){
+      const id = parseInt(url.split('/').pop());
+      const body = JSON.parse(opts.body);
+      _MOCK_PEDIDOS = _MOCK_PEDIDOS.map(p => p.id===id ? { ...p, ...body, confirmado_em: body.status==='confirmado' ? new Date().toISOString() : p.confirmado_em } : p);
+      const updated = _MOCK_PEDIDOS.find(p=>p.id===id);
+      return { ok:true, json: async () => updated };
+    }
+    if(url.startsWith('/api/pedidos/') && method === 'DELETE'){
+      const id = parseInt(url.split('/').pop());
+      _MOCK_PEDIDOS = _MOCK_PEDIDOS.filter(p=>p.id!==id);
+      return { ok:true, json: async () => ({ ok:true }) };
+    }
+    if(url.startsWith('/api/config/') && method === 'PUT'){
+      return { ok:true, json: async () => ({ ok:true }) };
+    }
+    // agenda
+    if(url === '/api/agenda' && method === 'GET'){
+      return { ok:true, json: async () => _MOCK_AGENDA };
+    }
+    if(url === '/api/agenda' && method === 'POST'){
+      const body = JSON.parse(opts.body);
+      const novo = { id: 'a'+Date.now(), ...body };
+      _MOCK_AGENDA.unshift(novo);
+      return { ok:true, json: async () => novo };
+    }
+    if(url.startsWith('/api/agenda/') && method === 'PATCH'){
+      const id = url.split('/').pop();
+      const body = JSON.parse(opts.body);
+      _MOCK_AGENDA = _MOCK_AGENDA.map(a => a.id===id ? { ...a, ...body } : a);
+      const updated = _MOCK_AGENDA.find(a=>a.id===id);
+      return { ok:true, json: async () => updated };
+    }
+    if(url.startsWith('/api/agenda/') && method === 'DELETE'){
+      const id = url.split('/').pop();
+      _MOCK_AGENDA = _MOCK_AGENDA.filter(a=>a.id!==id);
+      return { ok:true, json: async () => ({ ok:true }) };
+    }
+    if(url === '/api/ai/assist-admin' && method === 'POST'){
+      return { ok:true, json: async () => ({ resumo:'Cliente pretende levantar parede divisória na garagem, cerca de 18m².', itens_sugeridos:[] }) };
+    }
+    return _origFetch(url, opts);
+  };
+</script>
+<div style="position:sticky;top:0;z-index:100;background:#AD8A52;color:#fff;text-align:center;padding:8px;font-family:sans-serif;font-size:12.5px;font-weight:600;">
+  PRÉ-VISUALIZAÇÃO — dados de exemplo, nada é guardado de verdade
+</div>
+
+<header>
+  <div class="brand">
+    <img class="brand-mark" src="/icons/icon-192.png" alt="">
+    <div class="brand-text">
+      <div class="brand-name-row">
+        <p id="company-name">Sua Construtora</p>
+        <button class="edit-name" id="btn-edit-name" aria-label="Editar nome da empresa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>
+      <p>Painel de orçamentos</p>
+    </div>
+    <button class="share-btn" id="btn-share-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+      Link p/ cliente
+    </button>
+  </div>
+  <nav>
+    <button class="tab-btn active" data-tab="pendentes">Pendentes<span class="nav-badge" id="badge-pendentes" style="display:none;">0</span></button>
+    <button class="tab-btn" data-tab="confirmados">Confirmados</button>
+    <button class="tab-btn" data-tab="agenda">Agenda</button>
+    <button class="tab-btn" data-tab="catalogo">Catálogo</button>
+    <button class="tab-btn" data-tab="stats">Estatística</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-pendentes" class="tab active"></section>
+  <section id="tab-confirmados" class="tab"></section>
+
+  <section id="tab-agenda" class="tab">
+    <h2 class="section">Calendário</h2>
+    <div id="agenda-view"></div>
+  </section>
+
+  <section id="tab-catalogo" class="tab">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 class="section" style="margin:0;">Tipos de serviço</h2>
+      <button class="btn btn-primary btn-sm" id="btn-add-service">+ Novo serviço</button>
+    </div>
+    <div id="cat-services"></div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;margin-bottom:16px;">
+      <h2 class="section" style="margin:0;">Materiais</h2>
+      <button class="btn btn-primary btn-sm" id="btn-add-material">+ Novo material</button>
+    </div>
+    <div id="cat-materials"></div>
+  </section>
+
+  <section id="tab-stats" class="tab"></section>
+</main>
+
+<div class="overlay" id="item-overlay">
+  <div class="modal">
+    <h3>Adicionar item</h3>
+    <div class="field">
+      <label>Serviço</label>
+      <select id="im-service"></select>
+    </div>
+    <div class="field">
+      <label>Material</label>
+      <div style="display:flex;gap:8px;">
+        <select id="im-material" style="flex:1;"></select>
+        <button type="button" class="btn btn-sm" id="im-search-price" title="Pesquisar preço na internet" style="flex-shrink:0;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Descrição (opcional)</label>
+      <input id="im-desc" placeholder="Ex: Piso da sala">
+    </div>
+    <div class="row3">
+      <div class="field">
+        <label id="im-qty-label">Quantidade (m²)</label>
+        <input id="im-qty" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Preço unit. (€)</label>
+        <input id="im-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Mão de obra (%)</label>
+        <input id="im-labor" type="number" inputmode="decimal" placeholder="0" min="0" step="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="im-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="im-confirm">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Serviço -->
+<div class="overlay" id="service-overlay">
+  <div class="modal">
+    <h3 id="service-modal-title">Novo serviço</h3>
+    <div class="field">
+      <label>Nome</label>
+      <input id="svc-name" placeholder="Ex: Gesso, Impermeabilização">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Unidade</label>
+        <input id="svc-unit" placeholder="m²" value="m²">
+      </div>
+      <div class="field">
+        <label>Mão de obra padrão (%)</label>
+        <input id="svc-labor" type="number" inputmode="decimal" placeholder="50" min="0" step="1" value="50">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="svc-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="svc-confirm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Novo Material -->
+<div class="overlay" id="material-overlay">
+  <div class="modal">
+    <h3 id="material-modal-title">Novo material</h3>
+    <div class="field">
+      <label>Nome do material</label>
+      <input id="mat-name" placeholder="Ex: Telha cerâmica 40x40">
+    </div>
+    <div class="field">
+      <label>Serviço associado</label>
+      <select id="mat-service"></select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Unidade</label>
+        <input id="mat-unit" placeholder="m²">
+      </div>
+      <div class="field">
+        <label>Preço unitário (€)</label>
+        <input id="mat-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="mat-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="mat-confirm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Evento Agenda -->
+<div class="overlay" id="agenda-overlay">
+  <div class="modal">
+    <h3 id="agenda-modal-title">Novo evento</h3>
+    <div class="field">
+      <label>Título</label>
+      <input id="agenda-title" placeholder="Ex: Visita técnica, Início da obra">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Data</label>
+        <input id="agenda-date" type="date">
+      </div>
+      <div class="field">
+        <label>Tipo</label>
+        <select id="agenda-type">
+          <option value="visita">Visita</option>
+          <option value="obra">Início obra</option>
+          <option value="entrega">Entrega material</option>
+          <option value="reuniao">Reunião</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Pedido relacionado (opcional)</label>
+      <select id="agenda-pedido">
+        <option value="">— Nenhum —</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Nota</label>
+      <textarea id="agenda-note" placeholder="Observações..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="agenda-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="agenda-confirm">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detail-overlay">
+  <div class="modal" id="detail-modal-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="fab-row tab active" id="fab-confirmados" style="display:none;">
+  <button class="btn btn-primary btn-block" id="btn-novo-orcamento">+ Novo orçamento</button>
+</div>
+
+<script>
+const fmt = n => (Math.round((n||0)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
+const fmtDate = s => s ? new Date(s).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+let catalog = { services: [], materials: [] };
+let companyName = 'Sua Construtora';
+let pedidos = [];
+let agenda = [];
+let activeTab = 'pendentes';
+let draftItems = [];
+let editingPedidoId = null;
+let itemModalTargetIsDraft = false;
+let editingServiceId = null;
+let editingMaterialId = null;
+let editingAgendaId = null;
+
+/* ---------------- API ---------------- */
+async function apiGet(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('erro');
+  return r.json();
+}
+async function apiSend(url, method, body){
+  const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: body!==undefined ? JSON.stringify(body) : undefined });
+  if(!r.ok) throw new Error('erro');
+  return r.json();
+}
+
+async function loadAll(){
+  try{
+    const [cfg, list, ag] = await Promise.all([apiGet('/api/config'), apiGet('/api/pedidos'), apiGet('/api/agenda')]);
+    catalog = cfg.catalogo || { services:[], materials:[] };
+    companyName = (cfg.empresa && cfg.empresa.nome) || 'Sua Construtora';
+    pedidos = list || [];
+    agenda = ag || [];
+    document.getElementById('company-name').textContent = companyName;
+    renderAll();
+  }catch(e){
+    showToast('Erro ao carregar dados. Verifique a ligação.');
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
+});
+function switchTab(name){
+  activeTab = name;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('main .tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+  document.getElementById('fab-confirmados').style.display = (name==='confirmados') ? 'block' : 'none';
+  if(name === 'agenda') loadAgendaPedidos();
+}
+
+document.getElementById('btn-edit-name').addEventListener('click', async ()=>{
+  const name = prompt('Nome da empresa:', companyName);
+  if(name && name.trim()){
+    companyName = name.trim();
+    document.getElementById('company-name').textContent = companyName;
+    try{ await apiSend('/api/config/empresa', 'PUT', { nome: companyName }); showToast('Nome atualizado'); }
+    catch(e){ showToast('Erro ao guardar nome'); }
+  }
+});
+
+document.getElementById('btn-share-link').addEventListener('click', ()=>{
+  const link = window.location.origin + '/pedido';
+  if(navigator.share){
+    navigator.share({ title:'Pedir orçamento', url: link }).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(link).then(()=>showToast('Link copiado: '+link)).catch(()=>{
+      prompt('Copie o link para enviar aos clientes:', link);
+    });
+  } else {
+    prompt('Copie o link para enviar aos clientes:', link);
+  }
+});
+
+/* ---------------- calc ---------------- */
+function calcItem(it){
+  const materialCost = (it.quantity||0) * (it.unitPrice||0);
+  const laborCost = materialCost * ((it.laborPercent||0)/100);
+  return { materialCost, laborCost, total: materialCost + laborCost };
+}
+function calcTotals(items){
+  return (items||[]).reduce((acc,it)=>{
+    const c = calcItem(it);
+    acc.material += c.materialCost; acc.labor += c.laborCost; acc.total += c.total;
+    return acc;
+  }, {material:0, labor:0, total:0});
+}
+function calcExtras(p){
+  const extras = p.extras || [];
+  return extras.reduce((s,e)=> s + (parseFloat(e.valor)||0), 0);
+}
+
+/* ---------------- render root ---------------- */
+function renderAll(){
+  renderPendentes();
+  renderConfirmados();
+  renderAgenda();
+  renderCatalogView();
+  renderStats();
+  document.getElementById('fab-confirmados').style.display = (activeTab==='confirmados') ? 'block' : 'none';
+}
+
+/* ---------------- pendentes ---------------- */
+function renderPendentes(){
+  const el = document.getElementById('tab-pendentes');
+  const list = pedidos.filter(p=>p.status==='pendente');
+  const badge = document.getElementById('badge-pendentes');
+  if(list.length>0){ badge.style.display='inline-flex'; badge.textContent = list.length; }
+  else { badge.style.display='none'; }
+
+  if(list.length===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Nenhum pedido pendente</p>
+      <p>Partilhe o link de pedido de orçamento com os clientes — os pedidos aparecem aqui automaticamente.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>{
+    const t = calcTotals(p.itens);
+    const services = [...new Set((p.itens||[]).map(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return s ? s.name : null;
+    }).filter(Boolean))];
+    return `<div class="card proj-card" data-id="${p.id}">
+      <div class="proj-top">
+        <div>
+          <p class="proj-name">${escapeHtml(p.nome_cliente||'Sem nome')}</p>
+          <p class="proj-meta">${escapeHtml(p.morada||'')}${p.telefone ? ' · '+escapeHtml(p.telefone) : ''}</p>
+        </div>
+        ${t.total>0 ? `<div class="proj-total num" style="color:var(--amber);">~${fmt(t.total)}</div>` : ''}
+      </div>
+      <div class="proj-tags">
+        ${services.length ? services.map(s=>`<span class="tag tag-pending">${escapeHtml(s)}</span>`).join('') : (p.tipo_servico ? `<span class="tag tag-pending">${escapeHtml(p.tipo_servico)}</span>` : '')}
+      </div>
+      ${p.descricao ? `<p class="proj-desc">${escapeHtml(p.descricao)}</p>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.proj-card').forEach(card=>{
+    card.addEventListener('click', ()=>openPendingDetail(parseInt(card.dataset.id)));
+  });
+}
+
+function openPendingDetail(id){
+  const p = pedidos.find(p=>p.id===id);
+  if(!p) return;
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-modal-content');
+  const t = calcTotals(p.itens);
+  const itemsHtml = (p.itens||[]).length ? (p.itens||[]).map(it=>{
+    const c = calcItem(it);
+    return `<div class="item-row">
+      <div>
+        <div class="desc">${escapeHtml(it.desc)}</div>
+        <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')}${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · a definir'}</div>
+      </div>
+      <div class="val num">${it.unitPrice ? fmt(c.total) : '—'}</div>
+    </div>`;
+  }).join('') : '';
+  content.innerHTML = `
+    <h3>${escapeHtml(p.nome_cliente||'Pedido')}</h3>
+    <p class="sub-h">Recebido em ${fmtDate(p.created_at)}</p>
+    <div class="info-grid">
+      <div class="box"><div class="k">Telefone</div><div class="v">${escapeHtml(p.telefone)||'—'}</div></div>
+      <div class="box"><div class="k">Tipo de trabalho</div><div class="v">${escapeHtml(p.tipo_servico)||'—'}</div></div>
+      <div class="box full"><div class="k">Morada</div><div class="v">${escapeHtml(p.morada)||'—'}</div></div>
+      <div class="box full"><div class="k">Descrição do cliente</div><div class="v">${escapeHtml(p.descricao)||'—'}</div></div>
+      ${p.observacoes_cliente ? `<div class="box full"><div class="k">Observações</div><div class="v">${escapeHtml(p.observacoes_cliente)}</div></div>` : ''}
+    </div>
+    ${itemsHtml ? `
+      <h2 class="section">Trabalhos pedidos pelo cliente</h2>
+      ${itemsHtml}
+      <div class="total-box">
+        <div class="final"><span class="lbl">Estimativa vista pelo cliente</span><span class="num amt">${fmt(t.total)}</span></div>
+      </div>
+    ` : ''}
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="pd-recusar">Recusar</button>
+      <button class="btn btn-ghost" id="pd-fechar">Fechar</button>
+      <button class="btn btn-primary" id="pd-confirmar">Confirmar e assumir</button>
+    </div>
+  `;
+  content.querySelector('#pd-fechar').addEventListener('click', ()=>overlay.classList.remove('open'));
+  content.querySelector('#pd-recusar').addEventListener('click', async ()=>{
+    if(!confirm('Recusar este pedido? Esta ação não pode ser desfeita.')) return;
+    try{
+      await apiSend('/api/pedidos/'+id, 'DELETE');
+      pedidos = pedidos.filter(x=>x.id!==id);
+      overlay.classList.remove('open');
+      renderPendentes();
+      showToast('Pedido recusado');
+    }catch(e){ showToast('Erro ao recusar pedido'); }
+  });
+  content.querySelector('#pd-confirmar').addEventListener('click', async ()=>{
+    try{
+      const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
+        status:'confirmado',
+        nome_orcamento: p.tipo_servico ? (p.tipo_servico+' — '+p.nome_cliente) : p.nome_cliente
+      });
+      pedidos = pedidos.map(x=>x.id===id ? updated : x);
+      overlay.classList.remove('open');
+      renderAll();
+      switchTab('confirmados');
+      showToast('Pedido confirmado — pode agora montar o orçamento');
+      openConfirmedDetail(id);
+    }catch(e){ showToast('Erro ao confirmar pedido'); }
+  });
+  overlay.classList.add('open');
+}
+
+/* ---------------- confirmados ---------------- */
+function renderConfirmados(){
+  const el = document.getElementById('tab-confirmados');
+  const list = pedidos.filter(p=>p.status==='confirmado').sort((a,b)=> new Date(b.confirmado_em||b.created_at) - new Date(a.confirmado_em||a.created_at));
+  if(list.length===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Nenhum orçamento confirmado</p>
+      <p>Confirme um pedido pendente ou toque em "+ Novo orçamento" para criar um diretamente.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>{
+    const t = calcTotals(p.itens);
+    const extra = calcExtras(p);
+    const realTotal = t.total + extra;
+    const services = [...new Set((p.itens||[]).map(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return s ? s.name : null;
+    }).filter(Boolean))];
+    return `<div class="card proj-card" data-id="${p.id}">
+      <div class="proj-top">
+        <div>
+          <p class="proj-name">${escapeHtml(p.nome_orcamento || p.nome_cliente || 'Orçamento')}</p>
+          <p class="proj-meta">${escapeHtml(p.nome_cliente||'')}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+        </div>
+        <div class="proj-total num">${fmt(realTotal)}</div>
+      </div>
+      ${services.length ? `<div class="proj-tags">${services.map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.proj-card').forEach(card=>{
+    card.addEventListener('click', ()=>openConfirmedDetail(parseInt(card.dataset.id)));
+  });
+}
+
+function openConfirmedDetail(id){
+  const p = pedidos.find(p=>p.id===id);
+  if(!p) return;
+  editingPedidoId = id;
+  draftItems = JSON.parse(JSON.stringify(p.itens||[]));
+  itemModalTargetIsDraft = true;
+
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-modal-content');
+  const t = calcTotals(draftItems);
+  content.innerHTML = `
+    <h3>Orçamento</h3>
+    <p class="sub-h">${p.nome_cliente ? escapeHtml(p.nome_cliente) : 'Cliente não indicado'}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+    <div class="field"><label>Nome do orçamento</label><input id="ed-nome" value="${escapeHtml(p.nome_orcamento||'')}" placeholder="Ex: Reforma cozinha"></div>
+    <div class="row2">
+      <div class="field"><label>Cliente</label><input id="ed-cliente" value="${escapeHtml(p.nome_cliente||'')}"></div>
+      <div class="field"><label>Telefone</label><input id="ed-telefone" value="${escapeHtml(p.telefone||'')}"></div>
+    </div>
+    <div class="field"><label>Morada</label><input id="ed-morada" value="${escapeHtml(p.morada||'')}"></div>
+    <div class="field">
+      <label>Observações internas</label>
+      <textarea id="ed-obs" placeholder="Notas da equipa, prazos, acordos combinados...">${escapeHtml(p.observacoes_internas||'')}</textarea>
+      <button type="button" class="btn btn-sm" id="ed-ai-assist" style="margin-top:8px;border-color:var(--accent);color:var(--accent);">✦ Sugerir com IA</button>
+      <p class="search-status" id="ed-ai-status" style="font-size:12px;color:var(--text-faint);margin-top:6px;"></p>
+    </div>
+
+    <h2 class="section">Itens do orçamento</h2>
+    <div id="ed-items"></div>
+    <button class="btn btn-block" id="ed-add-item" style="margin-top:6px;">+ Adicionar item</button>
+
+    <h2 class="section">Custos adicionais</h2>
+    <p style="color:var(--text-faint);font-size:12.5px;margin:-6px 0 10px 2px;">Materiais novos, ajudantes, mão de obra extra — tudo que não está nos itens acima.</p>
+    <div id="ed-extras"></div>
+    <button class="btn btn-block" id="ed-add-extra" style="margin-top:6px;background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent);">+ Adicionar custo extra</button>
+
+    <div class="total-box">
+      <div class="line"><span>Material (itens)</span><span class="num" id="ed-tot-material">${fmt(t.material)}</span></div>
+      <div class="line"><span>Mão de obra (itens)</span><span class="num" id="ed-tot-mao">${fmt(t.labor)}</span></div>
+      <div class="line"><span>Custos adicionais</span><span class="num" id="ed-tot-extra">${fmt(calcExtras(p))}</span></div>
+      <div class="final"><span class="lbl">Total</span><span class="num amt" id="ed-tot-final">${fmt(t.total + calcExtras(p))}</span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="ed-delete">Excluir</button>
+      <button class="btn btn-ghost" id="ed-close">Fechar</button>
+      <button class="btn btn-primary" id="ed-save">Guardar</button>
+    </div>
+  `;
+  renderEditItems();
+  renderEditExtras();
+
+  content.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
+    const statusEl = content.querySelector('#ed-ai-status');
+    const btn = content.querySelector('#ed-ai-assist');
+    btn.disabled = true;
+    statusEl.textContent = 'A gerar sugestão...';
+    try{
+      const data = await apiSend('/api/ai/assist-admin', 'POST', {
+        descricao: p.descricao, observacoes_cliente: p.observacoes_cliente,
+        tipo_servico: p.tipo_servico, services: catalog.services
+      });
+      const obsEl = content.querySelector('#ed-obs');
+      if(data.resumo && !obsEl.value.trim()){ obsEl.value = data.resumo; }
+      else if(data.resumo){ obsEl.value = obsEl.value + '\n\n[IA] ' + data.resumo; }
+
+      let added = 0;
+      (data.itens_sugeridos||[]).forEach(sug=>{
+        const s = catalog.services.find(sv=>sv.name.toLowerCase()===String(sug.servico||'').toLowerCase());
+        if(!s) return;
+        const already = draftItems.some(it=>it.serviceId===s.id);
+        if(already) return;
+        const matGuess = (sug.material||'').toLowerCase();
+        let mat = null;
+        if(matGuess){
+          mat = catalog.materials.find(m=>m.serviceId===s.id && (m.name.toLowerCase().includes(matGuess) || matGuess.includes(m.name.toLowerCase().split(' ')[0])));
+        }
+        draftItems.push({
+          id: uid(), serviceId: s.id, materialId: mat ? mat.id : null,
+          desc: mat ? mat.name : (sug.material || s.name+' — a definir'),
+          quantity: sug.quantidade || 0, unit: s.unit,
+          unitPrice: mat ? mat.price : 0, laborPercent: s.laborPercent
+        });
+        added++;
+      });
+      renderEditItems();
+      statusEl.textContent = added>0 ? `Sugestão aplicada — ${added} item(ns) adicionados para rever.` : 'Sugestão de observações aplicada.';
+    }catch(e){
+      statusEl.textContent = 'Não foi possível gerar sugestão agora.';
+    }
+    btn.disabled = false;
+  });
+
+  content.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
+  content.querySelector('#ed-add-extra').addEventListener('click', ()=>{
+    const p = pedidos.find(x=>x.id===editingPedidoId);
+    const nome = prompt('Nome do custo (ex: Cimento extra, Ajudante João):');
+    if(!nome || !nome.trim()) return;
+    const tipo = prompt('Tipo (material / ajudante / mao_de_obra_extra / outro):', 'material') || 'outro';
+    const valor = parseFloat(prompt('Valor (€):', '0')) || 0;
+    if(!p.extras) p.extras = [];
+    p.extras.push({ id: uid(), nome: nome.trim(), tipo: tipo.trim(), valor });
+    renderEditExtras();
+    updateEditTotals();
+    showToast('Custo adicionado');
+  });
+  content.querySelector('#ed-close').addEventListener('click', ()=>{ overlay.classList.remove('open'); editingPedidoId=null; });
+  content.querySelector('#ed-delete').addEventListener('click', async ()=>{
+    if(!confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return;
+    try{
+      await apiSend('/api/pedidos/'+id, 'DELETE');
+      pedidos = pedidos.filter(x=>x.id!==id);
+      overlay.classList.remove('open');
+      editingPedidoId = null;
+      renderAll();
+      showToast('Orçamento excluído');
+    }catch(e){ showToast('Erro ao excluir'); }
+  });
+  content.querySelector('#ed-save').addEventListener('click', async ()=>{
+    try{
+      const p = pedidos.find(x=>x.id===editingPedidoId);
+      const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
+        nome_orcamento: document.getElementById('ed-nome').value.trim(),
+        nome_cliente: document.getElementById('ed-cliente').value.trim(),
+        telefone: document.getElementById('ed-telefone').value.trim(),
+        morada: document.getElementById('ed-morada').value.trim(),
+        observacoes_internas: document.getElementById('ed-obs').value.trim(),
+        itens: draftItems,
+        extras: p.extras || []
+      });
+      pedidos = pedidos.map(x=>x.id===id ? updated : x);
+      overlay.classList.remove('open');
+      editingPedidoId = null;
+      renderAll();
+      showToast('Orçamento guardado');
+    }catch(e){ showToast('Erro ao guardar orçamento'); }
+  });
+  overlay.classList.add('open');
+}
+
+function renderEditItems(){
+  const el = document.getElementById('ed-items');
+  if(!el) return;
+  if(draftItems.length===0){
+    el.innerHTML = `<p style="color:var(--text-faint);font-size:13.5px;margin:6px 0 0 2px;">Nenhum item adicionado ainda.</p>`;
+  } else {
+    el.innerHTML = draftItems.map((it, idx)=>{
+      const c = calcItem(it);
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return `<div class="item-row">
+        <div>
+          <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
+          <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${it.laborPercent}%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div class="val num">${fmt(c.total)}</div>
+          <button class="del" data-idx="${idx}">×</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.del').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        draftItems.splice(parseInt(b.dataset.idx),1);
+        renderEditItems();
+        updateEditTotals();
+      });
+    });
+  }
+  updateEditTotals();
+}
+function updateEditTotals(){
+  const t = calcTotals(draftItems);
+  const m = document.getElementById('ed-tot-material');
+  if(!m) return;
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  const extraTotal = calcExtras(p);
+  document.getElementById('ed-tot-material').textContent = fmt(t.material);
+  document.getElementById('ed-tot-mao').textContent = fmt(t.labor);
+  document.getElementById('ed-tot-extra').textContent = fmt(extraTotal);
+  document.getElementById('ed-tot-final').textContent = fmt(t.total + extraTotal);
+}
+
+/* ---------------- custos extras (materiais novos, ajudantes...) ---------------- */
+function renderEditExtras(){
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p) return;
+  const extras = p.extras || [];
+  const el = document.getElementById('ed-extras');
+  if(!el) return;
+  if(extras.length===0){
+    el.innerHTML = `<p style="color:var(--text-faint);font-size:13.5px;margin:6px 0 0 2px;">Nenhum custo extra adicionado ainda.</p>`;
+  } else {
+    el.innerHTML = extras.map((e, idx)=>`
+      <div class="item-row">
+        <div>
+          <div class="desc">${escapeHtml(e.nome || 'Custo')}</div>
+          <div class="sub">${escapeHtml(e.tipo || 'outro')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div class="val num">${fmt(parseFloat(e.valor)||0)}</div>
+          <button class="del" data-extra-idx="${idx}">×</button>
+        </div>
+      </div>
+    `).join('');
+    el.querySelectorAll('[data-extra-idx]').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        const p2 = pedidos.find(x=>x.id===editingPedidoId);
+        p2.extras.splice(parseInt(b.dataset.extraIdx), 1);
+        renderEditExtras();
+        updateEditTotals();
+      });
+    });
+  }
+}
+
+/* ---------------- novo orçamento manual ---------------- */
+document.getElementById('btn-novo-orcamento').addEventListener('click', async ()=>{
+  try{
+    const created = await apiSend('/api/pedidos/manual', 'POST', {
+      nome_cliente:'', telefone:'', morada:'', nome_orcamento:'Novo orçamento', itens:[]
+    });
+    pedidos.unshift(created);
+    renderConfirmados();
+    openConfirmedDetail(created.id);
+  }catch(e){ showToast('Erro ao criar orçamento'); }
+});
+
+/* ---------------- item modal (compartilhado) ---------------- */
+const itemOverlay = document.getElementById('item-overlay');
+const imService = document.getElementById('im-service');
+const imMaterial = document.getElementById('im-material');
+
+function populateServiceSelect(){
+  imService.innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+}
+function populateMaterialSelect(){
+  const sid = imService.value;
+  const mats = catalog.materials.filter(m=>m.serviceId===sid);
+  imMaterial.innerHTML = mats.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} — ${fmt(m.price)}/${m.unit}</option>`).join('')
+    + `<option value="__custom__">Outro material (definir preço)</option>`;
+  applyMaterialDefaults();
+}
+function applyMaterialDefaults(){
+  const s = catalog.services.find(s=>s.id===imService.value);
+  const mat = catalog.materials.find(m=>m.id===imMaterial.value);
+  document.getElementById('im-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
+  document.getElementById('im-labor').value = s ? s.laborPercent : 0;
+  document.getElementById('im-price').value = mat ? mat.price : '';
+}
+imService.addEventListener('change', populateMaterialSelect);
+imMaterial.addEventListener('change', applyMaterialDefaults);
+
+function openItemModal(){
+  populateServiceSelect();
+  populateMaterialSelect();
+  document.getElementById('im-desc').value='';
+  document.getElementById('im-qty').value='';
+  itemOverlay.classList.add('open');
+}
+document.getElementById('im-cancel').addEventListener('click', ()=>itemOverlay.classList.remove('open'));
+
+document.getElementById('im-search-price').addEventListener('click', ()=>{
+  let name = '';
+  if(imMaterial.value === '__custom__'){
+    const s = catalog.services.find(s=>s.id===imService.value);
+    name = document.getElementById('im-desc').value.trim() || (s ? s.name : '');
+  } else {
+    const opt = imMaterial.options[imMaterial.selectedIndex];
+    name = opt ? opt.textContent.split(' — ')[0] : '';
+  }
+  if(!name){ showToast('Escolha ou descreva o material primeiro'); return; }
+  window.open('https://www.google.com/search?tbm=shop&q='+encodeURIComponent(name+' preço comprar'), '_blank');
+});
+
+document.getElementById('im-confirm').addEventListener('click', ()=>{
+  const qty = parseFloat(document.getElementById('im-qty').value);
+  const price = parseFloat(document.getElementById('im-price').value);
+  const labor = parseFloat(document.getElementById('im-labor').value);
+  if(!qty || qty<=0){ showToast('Informe a quantidade'); return; }
+  if(isNaN(price) || price<0){ showToast('Informe o preço unitário'); return; }
+  const s = catalog.services.find(s=>s.id===imService.value);
+  draftItems.push({
+    id: uid(), serviceId: imService.value,
+    materialId: imMaterial.value==='__custom__' ? null : imMaterial.value,
+    desc: document.getElementById('im-desc').value.trim(),
+    quantity: qty, unit: s ? s.unit : '', unitPrice: price,
+    laborPercent: isNaN(labor) ? 0 : labor
+  });
+  itemOverlay.classList.remove('open');
+  renderEditItems();
+});
+
+/* ---------------- catalogo ---------------- */
+function renderCatalogView(){
+  const svcEl = document.getElementById('cat-services');
+  svcEl.innerHTML = catalog.services.map(s=>`
+    <div class="cat-row">
+      <div class="info" style="flex:1;cursor:pointer;" data-svc-edit="${s.id}"><div class="name">${escapeHtml(s.name)}</div><div class="meta">unidade: ${escapeHtml(s.unit)}</div></div>
+      <input type="number" min="0" step="1" value="${s.laborPercent}" data-svc="${s.id}" class="svc-labor" style="width:64px;">
+      <span style="color:var(--text-dim);font-size:13px;">%</span>
+      <button class="del" data-svc-del="${s.id}">×</button>
+    </div>
+  `).join('');
+
+  const matEl = document.getElementById('cat-materials');
+  matEl.innerHTML = catalog.materials.map(m=>{
+    const s = catalog.services.find(s=>s.id===m.serviceId);
+    return `<div class="cat-row">
+      <div class="info" style="flex:1;cursor:pointer;" data-mat-edit="${m.id}"><div class="name">${escapeHtml(m.name)}</div><div class="meta">${s?escapeHtml(s.name):'—'} · por ${escapeHtml(m.unit)}</div></div>
+      <input type="number" min="0" step="0.01" value="${m.price}" data-mat="${m.id}" class="mat-price" style="width:80px;">
+      <button class="del" data-mat-search="${m.id}" title="Pesquisar preço na internet">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="del" data-mat-del="${m.id}">×</button>
+    </div>`;
+  }).join('');
+
+  svcEl.querySelectorAll('.svc-labor').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const s = catalog.services.find(s=>s.id===inp.dataset.svc);
+      s.laborPercent = parseFloat(inp.value)||0;
+      await saveCatalog(); showToast('Serviço atualizado');
+    });
+  });
+  svcEl.querySelectorAll('[data-svc-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      catalog.services = catalog.services.filter(s=>s.id!==b.dataset.svcDel);
+      await saveCatalog(); renderCatalogView();
+    });
+  });
+  svcEl.querySelectorAll('[data-svc-edit]').forEach(b=>{
+    b.addEventListener('click', ()=>openServiceModal(b.dataset.svcEdit));
+  });
+  matEl.querySelectorAll('.mat-price').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const m = catalog.materials.find(m=>m.id===inp.dataset.mat);
+      m.price = parseFloat(inp.value)||0;
+      await saveCatalog(); showToast('Preço atualizado');
+    });
+  });
+  matEl.querySelectorAll('[data-mat-search]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const m = catalog.materials.find(m=>m.id===b.dataset.matSearch);
+      if(m) window.open('https://www.google.com/search?tbm=shop&q='+encodeURIComponent(m.name+' preço comprar'), '_blank');
+    });
+  });
+  matEl.querySelectorAll('[data-mat-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      catalog.materials = catalog.materials.filter(m=>m.id!==b.dataset.matDel);
+      await saveCatalog(); renderCatalogView();
+    });
+  });
+  matEl.querySelectorAll('[data-mat-edit]').forEach(b=>{
+    b.addEventListener('click', ()=>openMaterialModal(b.dataset.matEdit));
+  });
+}
+
+async function saveCatalog(){
+  try{ await apiSend('/api/config/catalogo', 'PUT', catalog); }
+  catch(e){ showToast('Erro ao guardar catálogo'); }
+}
+
+/* ---------------- modais de catálogo ---------------- */
+const serviceOverlay = document.getElementById('service-overlay');
+const materialOverlay = document.getElementById('material-overlay');
+
+function openServiceModal(id){
+  editingServiceId = id || null;
+  const s = id ? catalog.services.find(x=>x.id===id) : null;
+  document.getElementById('service-modal-title').textContent = s ? 'Editar serviço' : 'Novo serviço';
+  document.getElementById('svc-name').value = s ? s.name : '';
+  document.getElementById('svc-unit').value = s ? s.unit : 'm²';
+  document.getElementById('svc-labor').value = s ? s.laborPercent : 50;
+  serviceOverlay.classList.add('open');
+}
+function openMaterialModal(id){
+  editingMaterialId = id || null;
+  const m = id ? catalog.materials.find(x=>x.id===id) : null;
+  document.getElementById('material-modal-title').textContent = m ? 'Editar material' : 'Novo material';
+  document.getElementById('mat-name').value = m ? m.name : '';
+  document.getElementById('mat-service').innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  document.getElementById('mat-service').value = m ? m.serviceId : (catalog.services[0] ? catalog.services[0].id : '');
+  document.getElementById('mat-unit').value = m ? m.unit : (catalog.services[0] ? catalog.services[0].unit : 'm²');
+  document.getElementById('mat-price').value = m ? m.price : '';
+  materialOverlay.classList.add('open');
+}
+
+document.getElementById('btn-add-service').addEventListener('click', ()=>openServiceModal(null));
+document.getElementById('svc-cancel').addEventListener('click', ()=>serviceOverlay.classList.remove('open'));
+document.getElementById('svc-confirm').addEventListener('click', async ()=>{
+  const name = document.getElementById('svc-name').value.trim();
+  const unit = document.getElementById('svc-unit').value.trim() || 'm²';
+  const labor = parseFloat(document.getElementById('svc-labor').value) || 0;
+  if(!name){ showToast('Informe o nome'); return; }
+  if(editingServiceId){
+    const s = catalog.services.find(x=>x.id===editingServiceId);
+    s.name = name; s.unit = unit; s.laborPercent = labor;
+  } else {
+    catalog.services.push({ id:'s-'+uid(), name, unit, laborPercent:labor });
+  }
+  await saveCatalog(); renderCatalogView(); serviceOverlay.classList.remove('open');
+  showToast('Serviço guardado');
+});
+
+document.getElementById('btn-add-material').addEventListener('click', ()=>{
+  if(catalog.services.length===0){ showToast('Cadastre um serviço primeiro'); return; }
+  openMaterialModal(null);
+});
+document.getElementById('mat-cancel').addEventListener('click', ()=>materialOverlay.classList.remove('open'));
+document.getElementById('mat-confirm').addEventListener('click', async ()=>{
+  const name = document.getElementById('mat-name').value.trim();
+  const serviceId = document.getElementById('mat-service').value;
+  const unit = document.getElementById('mat-unit').value.trim() || 'm²';
+  const price = parseFloat(document.getElementById('mat-price').value) || 0;
+  if(!name){ showToast('Informe o nome'); return; }
+  if(editingMaterialId){
+    const m = catalog.materials.find(x=>x.id===editingMaterialId);
+    m.name = name; m.serviceId = serviceId; m.unit = unit; m.price = price;
+  } else {
+    catalog.materials.push({ id:'m-'+uid(), name, serviceId, unit, price });
+  }
+  await saveCatalog(); renderCatalogView(); materialOverlay.classList.remove('open');
+  showToast('Material guardado');
+});
+
+/* ---------------- agenda (calendário) ---------------- */
+const TIPO_AGENDA = {
+  visita:  { label:'Visita',        color:'#2563eb', bg:'rgba(37,99,235,0.10)' },
+  obra:    { label:'Início obra',   color:'#16a34a', bg:'rgba(22,163,74,0.10)' },
+  entrega: { label:'Entrega material', color:'#d97706', bg:'rgba(217,119,6,0.10)' },
+  reuniao: { label:'Reunião',       color:'#7c3aed', bg:'rgba(124,58,237,0.10)' },
+  outro:   { label:'Outro',         color:'#64748b', bg:'rgba(100,116,139,0.10)' }
+};
+
+async function loadAgendaPedidos(){
+  const sel = document.getElementById('agenda-pedido');
+  if(!sel) return;
+  const opts = ['<option value="">— Nenhum —</option>']
+    .concat(pedidos.map(p=>{
+      const label = `${p.nome_cliente || 'Cliente'} — ${p.nome_orcamento || (p.tipo_servico || 'Pedido #'+p.id)}`;
+      return `<option value="${p.id}">${escapeHtml(label)}</option>`;
+    }));
+  sel.innerHTML = opts.join('');
+}
+
+function agendaGrouped(){
+  const sorted = [...agenda].sort((a,b)=> (a.data||'').localeCompare(b.data||''));
+  const groups = {};
+  sorted.forEach(ev=>{
+    const key = ev.data || 'sem-data';
+    (groups[key] = groups[key] || []).push(ev);
+  });
+  return Object.entries(groups).sort((a,b)=>a[0].localeCompare(b[0]));
+}
+
+function renderAgenda(){
+  const el = document.getElementById('agenda-view');
+  if(!el) return;
+  if(agenda.length===0){
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon" style="font-size:40px;">📅</div>
+      <p class="lead">Sem eventos agendados</p>
+      <p>Organize visitas, obras e reuniões no calendário.</p>
+      <button class="btn btn-primary" id="agenda-empty-add" style="margin-top:8px;">+ Adicionar evento</button>
+    </div>`;
+    const add = document.getElementById('agenda-empty-add');
+    if(add) add.addEventListener('click', ()=>openAgendaModal(null));
+    return;
+  }
+
+  const groups = agendaGrouped();
+  el.innerHTML = `
+    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+      <button class="btn btn-primary btn-sm" id="agenda-add">+ Adicionar evento</button>
+    </div>
+    ${groups.map(([data, evs])=>`
+      <div class="agenda-day">
+        <div class="agenda-date">${fmtAgendaDate(data)}</div>
+        <div class="agenda-events">
+          ${evs.map(ev=>{
+            const t = TIPO_AGENDA[ev.tipo] || TIPO_AGENDA.outro;
+            const pedido = ev.pedidoId ? pedidos.find(p=>String(p.id)===String(ev.pedidoId)) : null;
+            return `<div class="agenda-card" data-agenda="${ev.id}" style="cursor:pointer;">
+              <span class="chip" style="color:${t.color};background:${t.bg};">${t.label}</span>
+              <div class="agenda-body">
+                <div class="agenda-title">${escapeHtml(ev.titulo || 'Evento')}</div>
+                ${pedido ? `<div class="agenda-sub">📋 ${escapeHtml(pedido.nome_cliente || 'Cliente')}</div>` : ''}
+                ${ev.nota ? `<div class="agenda-sub">${escapeHtml(ev.nota)}</div>` : ''}
+              </div>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+    `).join('')}
+  `;
+
+  const addBtn = document.getElementById('agenda-add');
+  if(addBtn) addBtn.addEventListener('click', ()=>openAgendaModal(null));
+  el.querySelectorAll('[data-agenda]').forEach(c=>{
+    c.addEventListener('click', ()=>openAgendaModal(c.dataset.agenda));
+  });
+}
+
+function fmtAgendaDate(data){
+  if(data==='sem-data' || !data) return 'Sem data';
+  const d = new Date(data + 'T00:00:00');
+  if(isNaN(d)) return data;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((d - today)/86400000);
+  let rel = '';
+  if(diff===0) rel = ' · Hoje';
+  else if(diff===1) rel = ' · Amanhã';
+  else if(diff===-1) rel = ' · Ontem';
+  return d.toLocaleDateString('pt-PT',{weekday:'short',day:'2-digit',month:'long'}) + rel;
+}
+
+const agendaOverlay = document.getElementById('agenda-overlay');
+
+function openAgendaModal(id){
+  editingAgendaId = id || null;
+  const ev = id ? agenda.find(x=>x.id===id) : null;
+  document.getElementById('agenda-modal-title').textContent = ev ? 'Editar evento' : 'Novo evento';
+  document.getElementById('agenda-title').value = ev ? (ev.titulo||'') : '';
+  document.getElementById('agenda-date').value = ev ? (ev.data||'') : new Date().toISOString().slice(0,10);
+  document.getElementById('agenda-type').value = ev ? (ev.tipo||'outro') : 'visita';
+  loadAgendaPedidos().then(()=>{
+    document.getElementById('agenda-pedido').value = ev ? (ev.pedidoId||'') : '';
+  });
+  document.getElementById('agenda-note').value = ev ? (ev.nota||'') : '';
+  agendaOverlay.classList.add('open');
+}
+
+document.getElementById('agenda-cancel').addEventListener('click', ()=>agendaOverlay.classList.remove('open'));
+document.getElementById('agenda-confirm').addEventListener('click', async ()=>{
+  const titulo = document.getElementById('agenda-title').value.trim();
+  const data = document.getElementById('agenda-date').value;
+  const tipo = document.getElementById('agenda-type').value;
+  const pedidoId = document.getElementById('agenda-pedido').value || null;
+  const nota = document.getElementById('agenda-note').value.trim();
+  if(!titulo){ showToast('Informe o título'); return; }
+  if(!data){ showToast('Informe a data'); return; }
+
+  try{
+    if(editingAgendaId){
+      const body = { titulo, data, tipo, pedidoId, nota };
+      const updated = await apiSend('/api/agenda/'+editingAgendaId, 'PATCH', body);
+      agenda = agenda.map(a=>a.id===editingAgendaId ? updated : a);
+      showToast('Evento atualizado');
+    } else {
+      const created = await apiSend('/api/agenda', 'POST', { titulo, data, tipo, pedidoId, nota });
+      agenda.unshift(created);
+      showToast('Evento adicionado');
+    }
+    agendaOverlay.classList.remove('open');
+    renderAgenda();
+  }catch(e){ showToast('Erro ao guardar evento'); }
+});
+
+/* ---------------- estatisticas ---------------- */
+function renderStats(){
+  const el = document.getElementById('tab-stats');
+  const total = pedidos.length;
+  const pendentesCount = pedidos.filter(p=>p.status==='pendente').length;
+  const confirmados = pedidos.filter(p=>p.status==='confirmado');
+  const confirmadosCount = confirmados.length;
+  const taxa = total>0 ? Math.round((confirmadosCount/total)*100) : 0;
+
+  let valorTotal = 0;
+  let totalMaterial = 0;
+  let totalMao = 0;
+  let totalExtras = 0;
+  confirmados.forEach(p=>{
+    const t = calcTotals(p.itens);
+    totalMaterial += t.material;
+    totalMao += t.labor;
+    totalExtras += calcExtras(p);
+    valorTotal += t.total + calcExtras(p);
+  });
+  const ticketMedio = confirmadosCount>0 ? valorTotal/confirmadosCount : 0;
+
+  const porServico = {};
+  confirmados.forEach(p=>{
+    (p.itens||[]).forEach(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      const name = s ? s.name : 'Outro';
+      porServico[name] = (porServico[name]||0) + calcItem(it).total;
+    });
+  });
+  const servicoEntries = Object.entries(porServico).sort((a,b)=>b[1]-a[1]);
+  const maxServico = servicoEntries.length ? servicoEntries[0][1] : 0;
+
+  if(total===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Ainda sem dados</p>
+      <p>As estatísticas aparecem aqui assim que houver pedidos e orçamentos confirmados.</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num-big">${total}</div><div class="lbl">Pedidos recebidos</div></div>
+      <div class="stat-box"><div class="num-big">${confirmadosCount}</div><div class="lbl">Confirmados</div></div>
+      <div class="stat-box"><div class="num-big">${pendentesCount}</div><div class="lbl">Pendentes</div></div>
+      <div class="stat-box"><div class="num-big">${taxa}%</div><div class="lbl">Taxa de confirmação</div></div>
+      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(valorTotal)}</div><div class="lbl">Valor total confirmado</div></div>
+      <div class="stat-box" style="grid-column:1/-1;background:var(--bg-soft);">
+        <div class="breakdown">
+          <div class="bd-row"><span>Material (itens)</span><span class="num">${fmt(totalMaterial)}</span></div>
+          <div class="bd-row"><span>Mão de obra (itens)</span><span class="num">${fmt(totalMao)}</span></div>
+          <div class="bd-row"><span>Custos adicionais</span><span class="num">${fmt(totalExtras)}</span></div>
+        </div>
+      </div>
+      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(ticketMedio)}</div><div class="lbl">Valor médio por orçamento confirmado</div></div>
+    </div>
+    ${servicoEntries.length ? `
+      <h2 class="section">Valor por tipo de serviço</h2>
+      ${servicoEntries.map(([name,val])=>`
+        <div class="bar-row">
+          <div class="bar-top"><span>${escapeHtml(name)}</span><span class="n num">${fmt(val)}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${maxServico>0 ? (val/maxServico*100) : 0}%"></div></div>
+        </div>
+      `).join('')}
+    ` : ''}
+  `;
+}
+
+loadAll();
+</script>
+</body>
+</html>
