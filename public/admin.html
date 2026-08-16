@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Orça Obra</title>
+<meta name="theme-color" content="#0A0E13">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Orça Obra">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A0E13; --panel:rgba(17,25,33,0.7); --panel-solid:#111921; --panel-2:rgba(28,39,49,0.55);
+    --border:rgba(94,234,212,0.16); --border-strong:rgba(94,234,212,0.38);
+    --text:#E7F4F3; --text-dim:#8CA0A6; --text-faint:#576267;
+    --accent:#5EEAD4; --accent-soft:rgba(94,234,212,0.12);
+    --indigo:#7C9CFF; --amber:#F5B94C; --danger:#F97066; --success:#4ADE80;
+    --radius:14px; --blur:18px;
+    --shadow-card:0 1px 0 rgba(94,234,212,0.06) inset, 0 10px 30px rgba(0,0,0,0.45);
+    --shadow-glow:0 0 0 1px rgba(94,234,212,0.4), 0 6px 26px rgba(94,234,212,0.28);
+    --shadow-pop:0 -10px 50px rgba(0,0,0,0.6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;overscroll-behavior:none;}
+  body{
+    background:
+      radial-gradient(circle at 12% 0%, rgba(124,156,255,0.10), transparent 40%),
+      radial-gradient(circle at 88% 15%, rgba(94,234,212,0.10), transparent 45%),
+      repeating-linear-gradient(0deg, rgba(94,234,212,0.035) 0 1px, transparent 1px 64px),
+      repeating-linear-gradient(90deg, rgba(94,234,212,0.035) 0 1px, transparent 1px 64px),
+      var(--bg);
+    background-attachment:fixed; color:var(--text); font-family:'Inter',sans-serif;
+    -webkit-tap-highlight-color:transparent; min-height:100vh;
+  }
+  .num{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.2px;}
+  ::selection{background:var(--accent-soft);color:var(--accent);}
+
+  header{
+    position:relative; padding:20px 16px 0 16px;
+    background:linear-gradient(180deg, rgba(17,25,33,0.9), rgba(13,19,26,0.85));
+    backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
+    border-bottom:1px solid var(--border);
+  }
+  header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;
+    background:linear-gradient(90deg, transparent, var(--accent), var(--indigo), transparent); opacity:0.7;}
+  .brand{display:flex;align-items:center;gap:12px;margin-bottom:16px;position:relative;z-index:1;}
+  .brand-mark{width:40px;height:40px;flex-shrink:0;border-radius:10px;box-shadow:0 0 0 1px var(--border-strong), 0 0 20px rgba(94,234,212,0.25);}
+  .brand-text{flex:1;min-width:0;}
+  .brand-name-row{display:flex;align-items:baseline;gap:8px;}
+  #company-name{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:19px;margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .edit-name{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;}
+  .edit-name svg{width:13px;height:13px;}
+  .brand-text p{margin:1px 0 0 0;font-size:11px;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;}
+  .share-btn{
+    display:flex;align-items:center;gap:6px;background:var(--panel-2);border:1px solid var(--border-strong);
+    color:var(--accent);border-radius:8px;padding:8px 11px;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;
+  }
+  .share-btn svg{width:14px;height:14px;}
+
+  nav{display:flex;gap:0;position:relative;z-index:1;overflow-x:auto;}
+  nav button{
+    flex:1;min-width:78px;background:transparent;border:none;color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12.5px;letter-spacing:0.2px;
+    padding:11px 6px 12px 6px;cursor:pointer;border-bottom:2px solid transparent;
+    transition:color .15s ease,border-color .15s ease;white-space:nowrap;position:relative;
+  }
+  nav button.active{color:var(--accent);border-bottom-color:var(--accent);text-shadow:0 0 16px rgba(94,234,212,0.5);}
+  nav button:hover:not(.active){color:var(--text);}
+  .nav-badge{
+    display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;
+    background:var(--amber);color:#2A1B00;font-size:10px;font-weight:700;border-radius:20px;margin-left:4px;
+  }
+
+  main{padding:18px 16px 104px 16px;max-width:760px;margin:0 auto;}
+  .tab{display:none;}
+  .tab.active{display:block;}
+
+  .card{background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border-radius:var(--radius);padding:16px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow-card);}
+  .empty{text-align:center;padding:44px 20px;}
+  .empty-icon{width:60px;height:60px;opacity:0.5;margin-bottom:8px;border-radius:14px;}
+  .empty p{margin:4px 0;font-size:13.5px;color:var(--text-dim);}
+  .empty .lead{font-family:'Space Grotesk',sans-serif;color:var(--text);font-size:17px;font-weight:600;margin-top:8px;}
+
+  .proj-card{cursor:pointer;transition:border-color .15s ease, box-shadow .15s ease;position:relative;}
+  .proj-card:active{border-color:var(--border-strong);box-shadow:var(--shadow-glow);}
+  .proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .proj-name{font-family:'Space Grotesk',sans-serif;font-size:16.5px;font-weight:600;margin:0 0 3px 0;}
+  .proj-meta{font-size:12.5px;color:var(--text-dim);margin:0;}
+  .proj-total{font-size:18px;color:var(--accent);white-space:nowrap;text-shadow:0 0 18px rgba(94,234,212,0.35);}
+  .proj-tags{display:flex;gap:6px;margin-top:11px;flex-wrap:wrap;}
+  .tag{font-size:11px;padding:3px 9px;border-radius:20px;background:rgba(124,156,255,0.12);color:var(--indigo);font-weight:500;border:1px solid rgba(124,156,255,0.25);}
+  .tag-pending{background:rgba(245,185,76,0.12);color:var(--amber);border-color:rgba(245,185,76,0.3);}
+  .proj-desc{font-size:13px;color:var(--text-dim);margin-top:8px;line-height:1.4;}
+
+  button{font-family:inherit;}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:10px;
+    border:1px solid var(--border-strong);background:var(--panel-2);color:var(--text);font-size:14.5px;font-weight:600;
+    cursor:pointer;min-height:48px;transition:transform .1s ease, box-shadow .15s ease;}
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--accent);border-color:var(--accent);color:#04211D;box-shadow:var(--shadow-glow);}
+  .btn-primary:hover{background:#7FF3E0;}
+  .btn-amber{background:var(--amber);border-color:var(--amber);color:#2A1B00;}
+  .btn-danger{background:transparent;border-color:rgba(249,112,102,0.5);color:var(--danger);}
+  .btn-ghost{background:transparent;border-color:var(--border-strong);color:var(--text-dim);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:9px 12px;min-height:38px;font-size:13px;}
+  .fab-row{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+    background:linear-gradient(0deg,var(--bg) 55%,transparent);}
+  .fab-row .btn{max-width:760px;margin:0 auto;}
+
+  label{display:block;font-size:12px;color:var(--text-dim);margin:0 0 6px 2px;font-weight:500;letter-spacing:0.3px;text-transform:uppercase;}
+  input,select,textarea{width:100%;background:rgba(10,15,20,0.6);border:1px solid var(--border);color:var(--text);
+    padding:12px 12px;border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;}
+  textarea{resize:vertical;min-height:70px;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  input::placeholder,textarea::placeholder{color:var(--text-faint);}
+  select option{background:#111921;color:var(--text);}
+  .field{margin-bottom:14px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .row3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;}
+  h2.section{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;color:var(--text);
+    margin:26px 0 12px 0;padding-bottom:9px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;letter-spacing:0.3px;}
+  h2.section::before{content:'';width:7px;height:7px;background:var(--accent);border-radius:2px;transform:rotate(45deg);flex-shrink:0;box-shadow:0 0 10px rgba(94,234,212,0.7);}
+  h2.section:first-child{margin-top:0;}
+
+  .item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;background:var(--panel-2);
+    border:1px solid var(--border);border-radius:10px;margin-bottom:8px;gap:10px;}
+  .item-row .desc{font-size:14px;font-weight:500;}
+  .item-row .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
+  .item-row .val{font-size:15px;color:var(--accent);white-space:nowrap;}
+  .item-row .del{background:none;border:none;color:var(--text-faint);font-size:20px;cursor:pointer;padding:4px 6px;}
+
+  .total-box{background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border-strong);border-radius:var(--radius);padding:18px;margin-top:16px;position:relative;box-shadow:var(--shadow-card);}
+  .total-box::before{content:'';position:absolute;top:0;left:16px;right:16px;height:2px;
+    background:linear-gradient(90deg, var(--accent), var(--indigo));box-shadow:0 0 12px rgba(94,234,212,0.6);}
+  .total-box .line{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dim);padding:4px 0;}
+  .total-box .final{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:11px;border-top:1px dashed var(--border);}
+  .total-box .final .lbl{font-family:'Space Grotesk',sans-serif;font-size:14.5px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase;}
+  .total-box .final .amt{font-size:26px;color:var(--accent);text-shadow:0 0 22px rgba(94,234,212,0.45);}
+
+  .cat-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
+  .cat-row .info{flex:1;min-width:0;}
+  .cat-row .info .name{font-size:14.5px;font-weight:500;}
+  .cat-row .info .meta{font-size:12px;color:var(--text-dim);}
+  .cat-row input{width:90px;text-align:right;padding:8px;font-size:14px;}
+  .cat-row .del{background:none;border:none;color:var(--text-faint);font-size:19px;cursor:pointer;padding:2px 4px;display:flex;align-items:center;}
+  .cat-row [data-mat-search]{color:var(--accent);}
+
+  .overlay{position:fixed;inset:0;background:rgba(4,8,11,0.7);display:none;align-items:flex-end;justify-content:center;z-index:50;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--panel-solid);width:100%;max-width:760px;border-radius:18px 18px 0 0;
+    padding:22px 18px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-pop);border-top:2px solid var(--accent);}
+  .modal h3{font-family:'Space Grotesk',sans-serif;font-size:19px;font-weight:600;margin:0 0 4px 0;}
+  .modal .sub-h{font-size:13px;color:var(--text-dim);margin:0 0 16px 0;}
+  .modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
+  .modal-actions .btn{flex:1;min-width:120px;}
+
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
+  .info-grid .box{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;}
+  .info-grid .box .k{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:3px;}
+  .info-grid .box .v{font-size:14px;font-weight:500;}
+  .info-grid .box.full{grid-column:1/-1;}
+
+  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--panel-solid);color:var(--accent);
+    padding:11px 20px;border-radius:10px;font-size:13.5px;font-weight:500;z-index:60;opacity:0;pointer-events:none;
+    transition:opacity .25s ease;box-shadow:var(--shadow-glow);border:1px solid var(--border-strong);}
+  .toast.show{opacity:1;}
+
+  /* estatisticas */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
+  .stat-box{background:var(--panel);backdrop-filter:blur(var(--blur));-webkit-backdrop-filter:blur(var(--blur));
+    border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+  .stat-box .num-big{font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:600;color:var(--accent);text-shadow:0 0 18px rgba(94,234,212,0.35);}
+  .stat-box .lbl{font-size:11.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.4px;margin-top:4px;}
+  .bar-row{margin-bottom:12px;}
+  .bar-row .bar-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;}
+  .bar-row .bar-top .n{color:var(--text-dim);}
+  .bar-track{height:8px;border-radius:6px;background:rgba(255,255,255,0.06);overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg, var(--accent), var(--indigo));box-shadow:0 0 10px rgba(94,234,212,0.5);border-radius:6px;}
+
+  .loading{text-align:center;padding:60px 20px;color:var(--text-faint);font-size:13.5px;}
+
+  @media(min-width:640px){ main{padding-top:22px;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <img class="brand-mark" src="/icons/icon-192.png" alt="">
+    <div class="brand-text">
+      <div class="brand-name-row">
+        <p id="company-name">Sua Construtora</p>
+        <button class="edit-name" id="btn-edit-name" aria-label="Editar nome da empresa">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        </button>
+      </div>
+      <p>Painel de orçamentos</p>
+    </div>
+    <button class="share-btn" id="btn-share-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
+      Link p/ cliente
+    </button>
+  </div>
+  <nav>
+    <button class="tab-btn active" data-tab="pendentes">Pendentes<span class="nav-badge" id="badge-pendentes" style="display:none;">0</span></button>
+    <button class="tab-btn" data-tab="confirmados">Confirmados</button>
+    <button class="tab-btn" data-tab="catalogo">Catálogo</button>
+    <button class="tab-btn" data-tab="stats">Estatística</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-pendentes" class="tab active"></section>
+  <section id="tab-confirmados" class="tab"></section>
+
+  <section id="tab-catalogo" class="tab">
+    <h2 class="section">Tipos de serviço</h2>
+    <div id="cat-services"></div>
+    <button class="btn btn-sm" id="btn-add-service" style="margin-top:4px;">+ Novo serviço</button>
+
+    <h2 class="section">Materiais</h2>
+    <div id="cat-materials"></div>
+    <button class="btn btn-sm" id="btn-add-material" style="margin-top:4px;">+ Novo material</button>
+  </section>
+
+  <section id="tab-stats" class="tab"></section>
+</main>
+
+<div class="overlay" id="item-overlay">
+  <div class="modal">
+    <h3>Adicionar item</h3>
+    <div class="field">
+      <label>Serviço</label>
+      <select id="im-service"></select>
+    </div>
+    <div class="field">
+      <label>Material</label>
+      <div style="display:flex;gap:8px;">
+        <select id="im-material" style="flex:1;"></select>
+        <button type="button" class="btn btn-sm" id="im-search-price" title="Pesquisar preço na internet" style="flex-shrink:0;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Descrição (opcional)</label>
+      <input id="im-desc" placeholder="Ex: Piso da sala">
+    </div>
+    <div class="row3">
+      <div class="field">
+        <label id="im-qty-label">Quantidade (m²)</label>
+        <input id="im-qty" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Preço unit. (€)</label>
+        <input id="im-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>Mão de obra (%)</label>
+        <input id="im-labor" type="number" inputmode="decimal" placeholder="0" min="0" step="1">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="im-cancel">Cancelar</button>
+      <button class="btn btn-primary" id="im-confirm">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="detail-overlay">
+  <div class="modal" id="detail-modal-content"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="fab-row tab active" id="fab-confirmados" style="display:none;">
+  <button class="btn btn-primary btn-block" id="btn-novo-orcamento">+ Novo orçamento</button>
+</div>
+
+<script>
+const fmt = n => (Math.round((n||0)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
+const fmtDate = s => s ? new Date(s).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+let catalog = { services: [], materials: [] };
+let companyName = 'Sua Construtora';
+let pedidos = [];
+let activeTab = 'pendentes';
+let draftItems = [];
+let editingPedidoId = null;
+let itemModalTargetIsDraft = false;
+
+/* ---------------- API ---------------- */
+async function apiGet(url){
+  const r = await fetch(url);
+  if(!r.ok) throw new Error('erro');
+  return r.json();
+}
+async function apiSend(url, method, body){
+  const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: body!==undefined ? JSON.stringify(body) : undefined });
+  if(!r.ok) throw new Error('erro');
+  return r.json();
+}
+
+async function loadAll(){
+  try{
+    const [cfg, list] = await Promise.all([apiGet('/api/config'), apiGet('/api/pedidos')]);
+    catalog = cfg.catalogo || { services:[], materials:[] };
+    companyName = (cfg.empresa && cfg.empresa.nome) || 'Sua Construtora';
+    pedidos = list || [];
+    document.getElementById('company-name').textContent = companyName;
+    renderAll();
+  }catch(e){
+    showToast('Erro ao carregar dados. Verifique a ligação.');
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
+});
+function switchTab(name){
+  activeTab = name;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('main .tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+  document.getElementById('fab-confirmados').style.display = (name==='confirmados') ? 'block' : 'none';
+}
+
+document.getElementById('btn-edit-name').addEventListener('click', async ()=>{
+  const name = prompt('Nome da empresa:', companyName);
+  if(name && name.trim()){
+    companyName = name.trim();
+    document.getElementById('company-name').textContent = companyName;
+    try{ await apiSend('/api/config/empresa', 'PUT', { nome: companyName }); showToast('Nome atualizado'); }
+    catch(e){ showToast('Erro ao guardar nome'); }
+  }
+});
+
+document.getElementById('btn-share-link').addEventListener('click', ()=>{
+  const link = window.location.origin + '/pedido';
+  if(navigator.share){
+    navigator.share({ title:'Pedir orçamento', url: link }).catch(()=>{});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(link).then(()=>showToast('Link copiado: '+link)).catch(()=>{
+      prompt('Copie o link para enviar aos clientes:', link);
+    });
+  } else {
+    prompt('Copie o link para enviar aos clientes:', link);
+  }
+});
+
+/* ---------------- calc ---------------- */
+function calcItem(it){
+  const materialCost = (it.quantity||0) * (it.unitPrice||0);
+  const laborCost = materialCost * ((it.laborPercent||0)/100);
+  return { materialCost, laborCost, total: materialCost + laborCost };
+}
+function calcTotals(items){
+  return (items||[]).reduce((acc,it)=>{
+    const c = calcItem(it);
+    acc.material += c.materialCost; acc.labor += c.laborCost; acc.total += c.total;
+    return acc;
+  }, {material:0, labor:0, total:0});
+}
+
+/* ---------------- render root ---------------- */
+function renderAll(){
+  renderPendentes();
+  renderConfirmados();
+  renderCatalogView();
+  renderStats();
+  document.getElementById('fab-confirmados').style.display = (activeTab==='confirmados') ? 'block' : 'none';
+}
+
+/* ---------------- pendentes ---------------- */
+function renderPendentes(){
+  const el = document.getElementById('tab-pendentes');
+  const list = pedidos.filter(p=>p.status==='pendente');
+  const badge = document.getElementById('badge-pendentes');
+  if(list.length>0){ badge.style.display='inline-flex'; badge.textContent = list.length; }
+  else { badge.style.display='none'; }
+
+  if(list.length===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Nenhum pedido pendente</p>
+      <p>Partilhe o link de pedido de orçamento com os clientes — os pedidos aparecem aqui automaticamente.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>{
+    const t = calcTotals(p.itens);
+    const services = [...new Set((p.itens||[]).map(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return s ? s.name : null;
+    }).filter(Boolean))];
+    return `<div class="card proj-card" data-id="${p.id}">
+      <div class="proj-top">
+        <div>
+          <p class="proj-name">${escapeHtml(p.nome_cliente||'Sem nome')}</p>
+          <p class="proj-meta">${escapeHtml(p.morada||'')}${p.telefone ? ' · '+escapeHtml(p.telefone) : ''}</p>
+        </div>
+        ${t.total>0 ? `<div class="proj-total num" style="color:var(--amber);">~${fmt(t.total)}</div>` : ''}
+      </div>
+      <div class="proj-tags">
+        ${services.length ? services.map(s=>`<span class="tag tag-pending">${escapeHtml(s)}</span>`).join('') : (p.tipo_servico ? `<span class="tag tag-pending">${escapeHtml(p.tipo_servico)}</span>` : '')}
+      </div>
+      ${p.descricao ? `<p class="proj-desc">${escapeHtml(p.descricao)}</p>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.proj-card').forEach(card=>{
+    card.addEventListener('click', ()=>openPendingDetail(parseInt(card.dataset.id)));
+  });
+}
+
+function openPendingDetail(id){
+  const p = pedidos.find(p=>p.id===id);
+  if(!p) return;
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-modal-content');
+  const t = calcTotals(p.itens);
+  const itemsHtml = (p.itens||[]).length ? (p.itens||[]).map(it=>{
+    const c = calcItem(it);
+    return `<div class="item-row">
+      <div>
+        <div class="desc">${escapeHtml(it.desc)}</div>
+        <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')}${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · a definir'}</div>
+      </div>
+      <div class="val num">${it.unitPrice ? fmt(c.total) : '—'}</div>
+    </div>`;
+  }).join('') : '';
+  content.innerHTML = `
+    <h3>${escapeHtml(p.nome_cliente||'Pedido')}</h3>
+    <p class="sub-h">Recebido em ${fmtDate(p.created_at)}</p>
+    <div class="info-grid">
+      <div class="box"><div class="k">Telefone</div><div class="v">${escapeHtml(p.telefone)||'—'}</div></div>
+      <div class="box"><div class="k">Tipo de trabalho</div><div class="v">${escapeHtml(p.tipo_servico)||'—'}</div></div>
+      <div class="box full"><div class="k">Morada</div><div class="v">${escapeHtml(p.morada)||'—'}</div></div>
+      <div class="box full"><div class="k">Descrição do cliente</div><div class="v">${escapeHtml(p.descricao)||'—'}</div></div>
+      ${p.observacoes_cliente ? `<div class="box full"><div class="k">Observações</div><div class="v">${escapeHtml(p.observacoes_cliente)}</div></div>` : ''}
+    </div>
+    ${itemsHtml ? `
+      <h2 class="section">Trabalhos pedidos pelo cliente</h2>
+      ${itemsHtml}
+      <div class="total-box">
+        <div class="final"><span class="lbl">Estimativa vista pelo cliente</span><span class="num amt">${fmt(t.total)}</span></div>
+      </div>
+    ` : ''}
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="pd-recusar">Recusar</button>
+      <button class="btn btn-ghost" id="pd-fechar">Fechar</button>
+      <button class="btn btn-primary" id="pd-confirmar">Confirmar e assumir</button>
+    </div>
+  `;
+  content.querySelector('#pd-fechar').addEventListener('click', ()=>overlay.classList.remove('open'));
+  content.querySelector('#pd-recusar').addEventListener('click', async ()=>{
+    if(!confirm('Recusar este pedido? Esta ação não pode ser desfeita.')) return;
+    try{
+      await apiSend('/api/pedidos/'+id, 'DELETE');
+      pedidos = pedidos.filter(x=>x.id!==id);
+      overlay.classList.remove('open');
+      renderPendentes();
+      showToast('Pedido recusado');
+    }catch(e){ showToast('Erro ao recusar pedido'); }
+  });
+  content.querySelector('#pd-confirmar').addEventListener('click', async ()=>{
+    try{
+      const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
+        status:'confirmado',
+        nome_orcamento: p.tipo_servico ? (p.tipo_servico+' — '+p.nome_cliente) : p.nome_cliente
+      });
+      pedidos = pedidos.map(x=>x.id===id ? updated : x);
+      overlay.classList.remove('open');
+      renderAll();
+      switchTab('confirmados');
+      showToast('Pedido confirmado — pode agora montar o orçamento');
+      openConfirmedDetail(id);
+    }catch(e){ showToast('Erro ao confirmar pedido'); }
+  });
+  overlay.classList.add('open');
+}
+
+/* ---------------- confirmados ---------------- */
+function renderConfirmados(){
+  const el = document.getElementById('tab-confirmados');
+  const list = pedidos.filter(p=>p.status==='confirmado').sort((a,b)=> new Date(b.confirmado_em||b.created_at) - new Date(a.confirmado_em||a.created_at));
+  if(list.length===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Nenhum orçamento confirmado</p>
+      <p>Confirme um pedido pendente ou toque em "+ Novo orçamento" para criar um diretamente.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(p=>{
+    const t = calcTotals(p.itens);
+    const services = [...new Set((p.itens||[]).map(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return s ? s.name : null;
+    }).filter(Boolean))];
+    return `<div class="card proj-card" data-id="${p.id}">
+      <div class="proj-top">
+        <div>
+          <p class="proj-name">${escapeHtml(p.nome_orcamento || p.nome_cliente || 'Orçamento')}</p>
+          <p class="proj-meta">${escapeHtml(p.nome_cliente||'')}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+        </div>
+        <div class="proj-total num">${fmt(t.total)}</div>
+      </div>
+      ${services.length ? `<div class="proj-tags">${services.map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  el.querySelectorAll('.proj-card').forEach(card=>{
+    card.addEventListener('click', ()=>openConfirmedDetail(parseInt(card.dataset.id)));
+  });
+}
+
+function openConfirmedDetail(id){
+  const p = pedidos.find(p=>p.id===id);
+  if(!p) return;
+  editingPedidoId = id;
+  draftItems = JSON.parse(JSON.stringify(p.itens||[]));
+  itemModalTargetIsDraft = true;
+
+  const overlay = document.getElementById('detail-overlay');
+  const content = document.getElementById('detail-modal-content');
+  const t = calcTotals(draftItems);
+  content.innerHTML = `
+    <h3>Orçamento</h3>
+    <p class="sub-h">${p.nome_cliente ? escapeHtml(p.nome_cliente) : 'Cliente não indicado'}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+    <div class="field"><label>Nome do orçamento</label><input id="ed-nome" value="${escapeHtml(p.nome_orcamento||'')}" placeholder="Ex: Reforma cozinha"></div>
+    <div class="row2">
+      <div class="field"><label>Cliente</label><input id="ed-cliente" value="${escapeHtml(p.nome_cliente||'')}"></div>
+      <div class="field"><label>Telefone</label><input id="ed-telefone" value="${escapeHtml(p.telefone||'')}"></div>
+    </div>
+    <div class="field"><label>Morada</label><input id="ed-morada" value="${escapeHtml(p.morada||'')}"></div>
+    <div class="field">
+      <label>Observações internas</label>
+      <textarea id="ed-obs" placeholder="Notas da equipa, prazos, acordos combinados...">${escapeHtml(p.observacoes_internas||'')}</textarea>
+      <button type="button" class="btn btn-sm" id="ed-ai-assist" style="margin-top:8px;border-color:var(--accent);color:var(--accent);">✦ Sugerir com IA</button>
+      <p class="search-status" id="ed-ai-status" style="font-size:12px;color:var(--text-faint);margin-top:6px;"></p>
+    </div>
+
+    <h2 class="section">Itens do orçamento</h2>
+    <div id="ed-items"></div>
+    <button class="btn btn-block" id="ed-add-item" style="margin-top:6px;">+ Adicionar item</button>
+
+    <div class="total-box">
+      <div class="line"><span>Material</span><span class="num" id="ed-tot-material">${fmt(t.material)}</span></div>
+      <div class="line"><span>Mão de obra</span><span class="num" id="ed-tot-mao">${fmt(t.labor)}</span></div>
+      <div class="final"><span class="lbl">Total</span><span class="num amt" id="ed-tot-final">${fmt(t.total)}</span></div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="ed-delete">Excluir</button>
+      <button class="btn btn-ghost" id="ed-close">Fechar</button>
+      <button class="btn btn-primary" id="ed-save">Guardar</button>
+    </div>
+  `;
+  renderEditItems();
+
+  content.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
+    const statusEl = content.querySelector('#ed-ai-status');
+    const btn = content.querySelector('#ed-ai-assist');
+    btn.disabled = true;
+    statusEl.textContent = 'A gerar sugestão...';
+    try{
+      const data = await apiSend('/api/ai/assist-admin', 'POST', {
+        descricao: p.descricao, observacoes_cliente: p.observacoes_cliente,
+        tipo_servico: p.tipo_servico, services: catalog.services
+      });
+      const obsEl = content.querySelector('#ed-obs');
+      if(data.resumo && !obsEl.value.trim()){ obsEl.value = data.resumo; }
+      else if(data.resumo){ obsEl.value = obsEl.value + '\n\n[IA] ' + data.resumo; }
+
+      let added = 0;
+      (data.itens_sugeridos||[]).forEach(sug=>{
+        const s = catalog.services.find(sv=>sv.name.toLowerCase()===String(sug.servico||'').toLowerCase());
+        if(!s) return;
+        const already = draftItems.some(it=>it.serviceId===s.id);
+        if(already) return;
+        const matGuess = (sug.material||'').toLowerCase();
+        let mat = null;
+        if(matGuess){
+          mat = catalog.materials.find(m=>m.serviceId===s.id && (m.name.toLowerCase().includes(matGuess) || matGuess.includes(m.name.toLowerCase().split(' ')[0])));
+        }
+        draftItems.push({
+          id: uid(), serviceId: s.id, materialId: mat ? mat.id : null,
+          desc: mat ? mat.name : (sug.material || s.name+' — a definir'),
+          quantity: sug.quantidade || 0, unit: s.unit,
+          unitPrice: mat ? mat.price : 0, laborPercent: s.laborPercent
+        });
+        added++;
+      });
+      renderEditItems();
+      statusEl.textContent = added>0 ? `Sugestão aplicada — ${added} item(ns) adicionados para rever.` : 'Sugestão de observações aplicada.';
+    }catch(e){
+      statusEl.textContent = 'Não foi possível gerar sugestão agora.';
+    }
+    btn.disabled = false;
+  });
+
+  content.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
+  content.querySelector('#ed-close').addEventListener('click', ()=>{ overlay.classList.remove('open'); editingPedidoId=null; });
+  content.querySelector('#ed-delete').addEventListener('click', async ()=>{
+    if(!confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return;
+    try{
+      await apiSend('/api/pedidos/'+id, 'DELETE');
+      pedidos = pedidos.filter(x=>x.id!==id);
+      overlay.classList.remove('open');
+      editingPedidoId = null;
+      renderAll();
+      showToast('Orçamento excluído');
+    }catch(e){ showToast('Erro ao excluir'); }
+  });
+  content.querySelector('#ed-save').addEventListener('click', async ()=>{
+    try{
+      const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
+        nome_orcamento: document.getElementById('ed-nome').value.trim(),
+        nome_cliente: document.getElementById('ed-cliente').value.trim(),
+        telefone: document.getElementById('ed-telefone').value.trim(),
+        morada: document.getElementById('ed-morada').value.trim(),
+        observacoes_internas: document.getElementById('ed-obs').value.trim(),
+        itens: draftItems
+      });
+      pedidos = pedidos.map(x=>x.id===id ? updated : x);
+      overlay.classList.remove('open');
+      editingPedidoId = null;
+      renderAll();
+      showToast('Orçamento guardado');
+    }catch(e){ showToast('Erro ao guardar orçamento'); }
+  });
+  overlay.classList.add('open');
+}
+
+function renderEditItems(){
+  const el = document.getElementById('ed-items');
+  if(!el) return;
+  if(draftItems.length===0){
+    el.innerHTML = `<p style="color:var(--text-faint);font-size:13.5px;margin:6px 0 0 2px;">Nenhum item adicionado ainda.</p>`;
+  } else {
+    el.innerHTML = draftItems.map((it, idx)=>{
+      const c = calcItem(it);
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      return `<div class="item-row">
+        <div>
+          <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
+          <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${it.laborPercent}%</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:4px;">
+          <div class="val num">${fmt(c.total)}</div>
+          <button class="del" data-idx="${idx}">×</button>
+        </div>
+      </div>`;
+    }).join('');
+    el.querySelectorAll('.del').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        draftItems.splice(parseInt(b.dataset.idx),1);
+        renderEditItems();
+        updateEditTotals();
+      });
+    });
+  }
+  updateEditTotals();
+}
+function updateEditTotals(){
+  const t = calcTotals(draftItems);
+  const m = document.getElementById('ed-tot-material');
+  if(!m) return;
+  document.getElementById('ed-tot-material').textContent = fmt(t.material);
+  document.getElementById('ed-tot-mao').textContent = fmt(t.labor);
+  document.getElementById('ed-tot-final').textContent = fmt(t.total);
+}
+
+/* ---------------- novo orçamento manual ---------------- */
+document.getElementById('btn-novo-orcamento').addEventListener('click', async ()=>{
+  try{
+    const created = await apiSend('/api/pedidos/manual', 'POST', {
+      nome_cliente:'', telefone:'', morada:'', nome_orcamento:'Novo orçamento', itens:[]
+    });
+    pedidos.unshift(created);
+    renderConfirmados();
+    openConfirmedDetail(created.id);
+  }catch(e){ showToast('Erro ao criar orçamento'); }
+});
+
+/* ---------------- item modal (compartilhado) ---------------- */
+const itemOverlay = document.getElementById('item-overlay');
+const imService = document.getElementById('im-service');
+const imMaterial = document.getElementById('im-material');
+
+function populateServiceSelect(){
+  imService.innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+}
+function populateMaterialSelect(){
+  const sid = imService.value;
+  const mats = catalog.materials.filter(m=>m.serviceId===sid);
+  imMaterial.innerHTML = mats.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} — ${fmt(m.price)}/${m.unit}</option>`).join('')
+    + `<option value="__custom__">Outro material (definir preço)</option>`;
+  applyMaterialDefaults();
+}
+function applyMaterialDefaults(){
+  const s = catalog.services.find(s=>s.id===imService.value);
+  const mat = catalog.materials.find(m=>m.id===imMaterial.value);
+  document.getElementById('im-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
+  document.getElementById('im-labor').value = s ? s.laborPercent : 0;
+  document.getElementById('im-price').value = mat ? mat.price : '';
+}
+imService.addEventListener('change', populateMaterialSelect);
+imMaterial.addEventListener('change', applyMaterialDefaults);
+
+function openItemModal(){
+  populateServiceSelect();
+  populateMaterialSelect();
+  document.getElementById('im-desc').value='';
+  document.getElementById('im-qty').value='';
+  itemOverlay.classList.add('open');
+}
+document.getElementById('im-cancel').addEventListener('click', ()=>itemOverlay.classList.remove('open'));
+
+document.getElementById('im-search-price').addEventListener('click', ()=>{
+  let name = '';
+  if(imMaterial.value === '__custom__'){
+    const s = catalog.services.find(s=>s.id===imService.value);
+    name = document.getElementById('im-desc').value.trim() || (s ? s.name : '');
+  } else {
+    const opt = imMaterial.options[imMaterial.selectedIndex];
+    name = opt ? opt.textContent.split(' — ')[0] : '';
+  }
+  if(!name){ showToast('Escolha ou descreva o material primeiro'); return; }
+  window.open('https://www.google.com/search?tbm=shop&q='+encodeURIComponent(name+' preço comprar'), '_blank');
+});
+
+document.getElementById('im-confirm').addEventListener('click', ()=>{
+  const qty = parseFloat(document.getElementById('im-qty').value);
+  const price = parseFloat(document.getElementById('im-price').value);
+  const labor = parseFloat(document.getElementById('im-labor').value);
+  if(!qty || qty<=0){ showToast('Informe a quantidade'); return; }
+  if(isNaN(price) || price<0){ showToast('Informe o preço unitário'); return; }
+  const s = catalog.services.find(s=>s.id===imService.value);
+  draftItems.push({
+    id: uid(), serviceId: imService.value,
+    materialId: imMaterial.value==='__custom__' ? null : imMaterial.value,
+    desc: document.getElementById('im-desc').value.trim(),
+    quantity: qty, unit: s ? s.unit : '', unitPrice: price,
+    laborPercent: isNaN(labor) ? 0 : labor
+  });
+  itemOverlay.classList.remove('open');
+  renderEditItems();
+});
+
+/* ---------------- catalogo ---------------- */
+function renderCatalogView(){
+  const svcEl = document.getElementById('cat-services');
+  svcEl.innerHTML = catalog.services.map(s=>`
+    <div class="cat-row">
+      <div class="info"><div class="name">${escapeHtml(s.name)}</div><div class="meta">unidade: ${escapeHtml(s.unit)}</div></div>
+      <input type="number" min="0" step="1" value="${s.laborPercent}" data-svc="${s.id}" class="svc-labor">
+      <span style="color:var(--text-dim);font-size:13px;">%</span>
+      <button class="del" data-svc-del="${s.id}">×</button>
+    </div>
+  `).join('');
+
+  const matEl = document.getElementById('cat-materials');
+  matEl.innerHTML = catalog.materials.map(m=>{
+    const s = catalog.services.find(s=>s.id===m.serviceId);
+    return `<div class="cat-row">
+      <div class="info"><div class="name">${escapeHtml(m.name)}</div><div class="meta">${s?escapeHtml(s.name):'—'} · por ${escapeHtml(m.unit)}</div></div>
+      <input type="number" min="0" step="0.01" value="${m.price}" data-mat="${m.id}" class="mat-price">
+      <button class="del" data-mat-search="${m.id}" title="Pesquisar preço na internet">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+      </button>
+      <button class="del" data-mat-del="${m.id}">×</button>
+    </div>`;
+  }).join('');
+
+  svcEl.querySelectorAll('.svc-labor').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const s = catalog.services.find(s=>s.id===inp.dataset.svc);
+      s.laborPercent = parseFloat(inp.value)||0;
+      await saveCatalog(); showToast('Serviço atualizado');
+    });
+  });
+  svcEl.querySelectorAll('[data-svc-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      catalog.services = catalog.services.filter(s=>s.id!==b.dataset.svcDel);
+      await saveCatalog(); renderCatalogView();
+    });
+  });
+  matEl.querySelectorAll('.mat-price').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const m = catalog.materials.find(m=>m.id===inp.dataset.mat);
+      m.price = parseFloat(inp.value)||0;
+      await saveCatalog(); showToast('Preço atualizado');
+    });
+  });
+  matEl.querySelectorAll('[data-mat-search]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const m = catalog.materials.find(m=>m.id===b.dataset.matSearch);
+      if(m) window.open('https://www.google.com/search?tbm=shop&q='+encodeURIComponent(m.name+' preço comprar'), '_blank');
+    });
+  });
+  matEl.querySelectorAll('[data-mat-del]').forEach(b=>{
+    b.addEventListener('click', async ()=>{
+      catalog.materials = catalog.materials.filter(m=>m.id!==b.dataset.matDel);
+      await saveCatalog(); renderCatalogView();
+    });
+  });
+}
+
+async function saveCatalog(){
+  try{ await apiSend('/api/config/catalogo', 'PUT', catalog); }
+  catch(e){ showToast('Erro ao guardar catálogo'); }
+}
+
+document.getElementById('btn-add-service').addEventListener('click', async ()=>{
+  const name = prompt('Nome do novo serviço (ex: Gesso, Impermeabilização):');
+  if(!name || !name.trim()) return;
+  const unit = prompt('Unidade de medida (ex: m², ponto, un):', 'm²') || 'm²';
+  const labor = parseFloat(prompt('Percentual de mão de obra padrão (%):', '50')) || 0;
+  catalog.services.push({ id:'s-'+uid(), name:name.trim(), unit:unit.trim(), laborPercent:labor });
+  await saveCatalog(); renderCatalogView();
+});
+document.getElementById('btn-add-material').addEventListener('click', async ()=>{
+  if(catalog.services.length===0){ showToast('Cadastre um serviço primeiro'); return; }
+  const name = prompt('Nome do material:');
+  if(!name || !name.trim()) return;
+  const svcNames = catalog.services.map((s,i)=>`${i+1}) ${s.name}`).join('\\n');
+  const idxStr = prompt('Vincular a qual serviço? Digite o número:\\n'+svcNames, '1');
+  const idx = parseInt(idxStr) - 1;
+  const svc = catalog.services[idx] || catalog.services[0];
+  window.open('https://www.google.com/search?tbm=shop&q='+encodeURIComponent(name+' preço comprar'), '_blank');
+  const price = parseFloat(prompt('Confira o preço na aba que abriu e digite o valor por '+(svc?svc.unit:'unidade')+' (€):', '0')) || 0;
+  catalog.materials.push({ id:'m-'+uid(), name:name.trim(), serviceId:svc.id, unit:svc.unit, price });
+  await saveCatalog(); renderCatalogView();
+});
+
+/* ---------------- estatisticas ---------------- */
+function renderStats(){
+  const el = document.getElementById('tab-stats');
+  const total = pedidos.length;
+  const pendentesCount = pedidos.filter(p=>p.status==='pendente').length;
+  const confirmados = pedidos.filter(p=>p.status==='confirmado');
+  const confirmadosCount = confirmados.length;
+  const taxa = total>0 ? Math.round((confirmadosCount/total)*100) : 0;
+
+  let valorTotal = 0;
+  confirmados.forEach(p=>{ valorTotal += calcTotals(p.itens).total; });
+  const ticketMedio = confirmadosCount>0 ? valorTotal/confirmadosCount : 0;
+
+  const porServico = {};
+  confirmados.forEach(p=>{
+    (p.itens||[]).forEach(it=>{
+      const s = catalog.services.find(s=>s.id===it.serviceId);
+      const name = s ? s.name : 'Outro';
+      porServico[name] = (porServico[name]||0) + calcItem(it).total;
+    });
+  });
+  const servicoEntries = Object.entries(porServico).sort((a,b)=>b[1]-a[1]);
+  const maxServico = servicoEntries.length ? servicoEntries[0][1] : 0;
+
+  if(total===0){
+    el.innerHTML = `<div class="empty">
+      <img class="empty-icon" src="/icons/icon-192.png" alt="">
+      <p class="lead">Ainda sem dados</p>
+      <p>As estatísticas aparecem aqui assim que houver pedidos e orçamentos confirmados.</p>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num-big">${total}</div><div class="lbl">Pedidos recebidos</div></div>
+      <div class="stat-box"><div class="num-big">${confirmadosCount}</div><div class="lbl">Confirmados</div></div>
+      <div class="stat-box"><div class="num-big">${pendentesCount}</div><div class="lbl">Pendentes</div></div>
+      <div class="stat-box"><div class="num-big">${taxa}%</div><div class="lbl">Taxa de confirmação</div></div>
+      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(valorTotal)}</div><div class="lbl">Valor total confirmado</div></div>
+      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(ticketMedio)}</div><div class="lbl">Valor médio por orçamento confirmado</div></div>
+    </div>
+    ${servicoEntries.length ? `
+      <h2 class="section">Valor por tipo de serviço</h2>
+      ${servicoEntries.map(([name,val])=>`
+        <div class="bar-row">
+          <div class="bar-top"><span>${escapeHtml(name)}</span><span class="n num">${fmt(val)}</span></div>
+          <div class="bar-track"><div class="bar-fill" style="width:${maxServico>0 ? (val/maxServico*100) : 0}%"></div></div>
+        </div>
+      `).join('')}
+    ` : ''}
+  `;
+}
+
+loadAll();
+</script>
+</body>
+</html>
