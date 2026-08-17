@@ -4,107 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Pedir orçamento</title>
-<meta name="theme-color" content="#FAFAF8">
+<meta name="theme-color" content="#F8FAFC">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#FAFAF8; --bg-2:#F2F1EC;
-    --panel:rgba(255,255,255,0.9); --panel-solid:#FFFFFF; --panel-2:#F4F3EF;
-    --border:#E7E4DD; --border-strong:#D6D2C8;
-    --text:#17181A; --text-dim:#68686A; --text-faint:#9C9A94;
-    --accent:#12312B; --accent-soft:rgba(18,49,43,0.07);
-    --indigo:#8A6A3E; --amber:#AD8A52; --danger:#B23B2E;
-    --radius:12px; --blur:20px;
-  }
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;}
-  body{
-    background:
-      radial-gradient(circle at 15% 0%, rgba(18,49,43,0.035), transparent 42%),
-      radial-gradient(circle at 90% 20%, rgba(173,138,82,0.05), transparent 45%),
-      var(--bg);
-    background-attachment:fixed; color:var(--text); font-family:'Inter',sans-serif; min-height:100vh;
-  }
-  .wrap{max-width:560px;margin:0 auto;padding:30px 18px 60px 18px;}
-  .top{display:flex;align-items:center;gap:12px;margin-bottom:24px;}
-  .top img{width:38px;height:38px;border-radius:9px;}
-  .top h1{font-family:'Newsreader',serif;font-style:italic;font-size:19px;font-weight:600;margin:0;}
-  .top p{margin:2px 0 0 0;font-size:10.5px;color:var(--text-faint);letter-spacing:0.8px;text-transform:uppercase;}
-
-  .intro{background:var(--panel-solid);border:1px solid var(--border);border-radius:var(--radius);padding:17px 18px;margin-bottom:24px;}
-  .intro p{margin:0;font-size:14px;color:var(--text-dim);line-height:1.6;}
-
-  label{display:block;font-size:11.5px;color:var(--text-faint);margin:0 0 6px 2px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;}
-  input,select,textarea{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
-    padding:13px 12px;border-radius:9px;font-size:15.5px;font-family:'Inter',sans-serif;}
-  textarea{resize:vertical;min-height:80px;}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
-  input::placeholder,textarea::placeholder{color:var(--text-faint);}
-  select option{background:#fff;color:var(--text);}
-  .field{margin-bottom:16px;}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-
-  h2.section{font-family:'Newsreader',serif;font-style:italic;font-size:15px;font-weight:600;color:var(--text);
-    margin:28px 0 15px 0;letter-spacing:0.1px;padding-bottom:9px;border-bottom:1px solid var(--border);}
-  h2.section:first-of-type{margin-top:0;}
-
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;
-    padding:15px 18px;border-radius:9px;border:1px solid var(--accent);
-    background:var(--accent);color:#F4F1E9;font-size:15.5px;font-weight:600;cursor:pointer;margin-top:10px;}
-  .btn:active{opacity:0.8;}
-  .btn:disabled{opacity:0.5;cursor:default;}
-
-  .error{color:var(--danger);font-size:13px;margin-top:10px;display:none;}
-  .error.show{display:block;}
-
-  .done{text-align:center;padding:64px 20px;}
-  .done img{width:52px;height:52px;margin-bottom:20px;border-radius:12px;}
-  .done h2{font-family:'Newsreader',serif;font-style:italic;font-size:23px;margin:0 0 10px 0;}
-  .done p{color:var(--text-dim);font-size:14.5px;line-height:1.6;max-width:400px;margin:0 auto;}
-  #form-screen.hidden, #done-screen.hidden{display:none;}
-
-  .item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;
-    background:var(--panel-2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;gap:10px;}
-  .item-row .desc{font-size:14px;font-weight:500;}
-  .item-row .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
-  .item-row .val{font-size:14.5px;color:var(--accent);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-weight:600;}
-  .item-row .del{background:none;border:none;color:var(--text-faint);font-size:20px;cursor:pointer;padding:4px 6px;}
-
-  .estimate-box{background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:var(--radius);padding:17px 18px;margin:16px 0;position:relative;}
-  .estimate-box::before{content:'';position:absolute;top:0;left:18px;right:18px;height:2px;background:var(--amber);}
-  .estimate-top{display:flex;justify-content:space-between;align-items:baseline;
-    font-family:'Inter',sans-serif;font-size:12.5px;text-transform:uppercase;letter-spacing:0.5px;color:var(--text-faint);}
-  .estimate-top .amt{font-size:25px;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-weight:600;}
-  .estimate-note{font-size:12px;color:var(--text-faint);margin:9px 0 0 0;line-height:1.5;}
-
-  .search-result{
-    display:flex;justify-content:space-between;align-items:center;gap:10px;
-    padding:11px 12px;background:var(--panel-2);border:1px solid var(--border);border-radius:8px;
-    margin-top:8px;cursor:pointer;transition:border-color .15s ease;
-  }
-  .search-result:active, .search-result:hover{border-color:var(--accent);}
-  .search-result .sr-title{font-size:13px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-  .search-result .sr-source{font-size:11px;color:var(--text-faint);margin-top:2px;}
-  .search-result .sr-price{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--accent);white-space:nowrap;}
-  .search-status{font-size:12.5px;color:var(--text-faint);margin-top:8px;}
-  .selected-material{
-    display:flex;justify-content:space-between;align-items:center;gap:10px;
-    padding:11px 13px;background:var(--accent-soft);border:1px solid var(--border-strong);border-radius:9px;margin-top:10px;
-  }
-  .selected-material .sm-name{font-size:13.5px;font-weight:500;}
-  .selected-material .sm-price{font-family:'IBM Plex Mono',monospace;font-weight:600;color:var(--accent);}
-  .selected-material button{background:none;border:none;color:var(--text-faint);font-size:18px;cursor:pointer;}
-
-  .ai-box{
-    background:var(--panel-solid);
-    border:1px solid var(--border-strong);border-radius:var(--radius);padding:17px 18px;
-  }
-  .ai-box label{color:var(--accent);}
-  #btn-ai-analisar{background:transparent;color:var(--accent);border-color:var(--accent);}
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/pedido.css">
 </head>
 <body>
 <div class="wrap">
@@ -117,16 +25,16 @@
   </div>
 
   <div id="form-screen">
-    <div class="intro">
+    <div class="card">
       <p>Escolha os trabalhos que pretende realizar e veja uma estimativa do valor na hora. Depois de confirmar, entraremos em contacto para marcar uma visita e fechar o orçamento — assim evitamos deslocações desnecessárias.</p>
     </div>
 
-    <h2 class="section">Os seus dados</h2>
+    <h2 class="section-title">Os seus dados</h2>
     <div class="field">
       <label>Nome</label>
       <input id="f-nome" placeholder="O seu nome">
     </div>
-    <div class="row2">
+    <div class="row row-2">
       <div class="field">
         <label>Telefone</label>
         <input id="f-telefone" type="tel" placeholder="912 345 678">
@@ -137,15 +45,15 @@
       </div>
     </div>
 
-    <h2 class="section">O que pretende fazer</h2>
-    <div class="ai-box">
+    <h2 class="section-title">O que pretende fazer</h2>
+    <div class="ai-box card stack">
       <label>Não sabe bem como preencher? Descreva por palavras suas</label>
       <textarea id="ai-texto" placeholder="Ex: quero pintar a sala e o corredor, e trocar o piso da cozinha, tem uns 15m² a cozinha"></textarea>
-      <button type="button" class="btn btn-block" id="btn-ai-analisar" style="margin-top:8px;">✦ Analisar com IA e preencher</button>
+      <button type="button" class="btn btn-block" id="btn-ai-analisar">✦ Analisar com IA e preencher</button>
       <p class="search-status" id="ai-status"></p>
     </div>
 
-    <div class="field" style="margin-top:18px;">
+    <div class="field">
       <label>Tipo de trabalho</label>
       <select id="f-servico"></select>
     </div>
@@ -153,37 +61,37 @@
       <label>Material</label>
       <select id="f-material"></select>
     </div>
-    <div class="field" id="f-search-wrap">
+    <div class="field">
       <label>Não encontrou o material? Escreva e pesquise preços reais</label>
-      <div style="display:flex;gap:8px;">
+      <div class="search-row">
         <input id="f-search-text" placeholder="Ex: porcelanato cinza 60x60">
-        <button type="button" class="btn btn-sm" id="btn-search-material" style="flex-shrink:0;min-height:44px;">Pesquisar</button>
+        <button type="button" class="btn" id="btn-search-material">Pesquisar</button>
       </div>
       <div id="f-search-results"></div>
-      <div id="f-search-selected" style="display:none;"></div>
+      <div id="f-search-selected" class="hidden"></div>
     </div>
-    <div class="row2">
+    <div class="row row-2">
       <div class="field">
         <label id="f-qty-label">Quantidade (m²)</label>
         <input id="f-qty" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
       </div>
       <div class="field">
         <label>&nbsp;</label>
-        <button type="button" class="btn btn-block" id="btn-add-item" style="min-height:49px;">+ Adicionar</button>
+        <button type="button" class="btn btn-block" id="btn-add-item">+ Adicionar</button>
       </div>
     </div>
 
     <div id="f-items"></div>
 
-    <div class="estimate-box" id="estimate-box" style="display:none;">
+    <div class="card estimate hidden" id="estimate-box">
       <div class="estimate-top">
         <span>Estimativa</span>
-        <span class="num amt" id="estimate-total">0,00 €</span>
+        <span class="amt money" id="estimate-total">0,00 €</span>
       </div>
       <p class="estimate-note">Valor estimado com base nos preços praticados — o valor final é confirmado após visita técnica.</p>
     </div>
 
-    <h2 class="section">Mais detalhes</h2>
+    <h2 class="section-title">Mais detalhes</h2>
     <div class="field">
       <label>Descreva com mais detalhe (opcional)</label>
       <textarea id="f-descricao" placeholder="Ex: a casa de banho tem infiltração, gostaria de rever o piso todo"></textarea>
@@ -193,13 +101,13 @@
       <textarea id="f-obs" placeholder="Prazos, preferências, disponibilidade para visita, etc."></textarea>
     </div>
 
-    <button class="btn btn-primary" id="btn-enviar" style="margin-top:6px;">Confirmar e enviar pedido</button>
+    <button class="btn btn-primary btn-block" id="btn-enviar">Confirmar e enviar pedido</button>
     <p class="error" id="form-error">Preencha o nome, a morada, e adicione pelo menos um trabalho.</p>
   </div>
 
   <div id="done-screen" class="hidden">
-    <div class="done">
-      <img src="/icons/icon-192.png" alt="">
+    <div class="empty">
+      <img class="done-icon" src="/icons/icon-192.png" alt="">
       <h2>Pedido enviado!</h2>
       <p>Obrigado. Vamos analisar o pedido e entraremos em contacto brevemente para confirmar o orçamento.</p>
     </div>
@@ -303,15 +211,15 @@ document.getElementById('btn-search-material').addEventListener('click', async (
       return;
     }
     resultsEl.innerHTML = data.results.map((res, idx)=>`
-      <div class="search-result" data-idx="${idx}">
-        <div>
-          <div class="sr-title">${escapeHtml(res.title)}</div>
-          ${res.source ? `<div class="sr-source">${escapeHtml(res.source)}</div>` : ''}
+      <div class="result" data-idx="${idx}">
+        <div class="result-info">
+          <div class="result-title">${escapeHtml(res.title)}</div>
+          ${res.source ? `<div class="result-source">${escapeHtml(res.source)}</div>` : ''}
         </div>
-        <div class="sr-price">${fmt(res.price)}</div>
+        <div class="result-price money">${fmt(res.price)}</div>
       </div>
     `).join('');
-    resultsEl.querySelectorAll('.search-result').forEach(el=>{
+    resultsEl.querySelectorAll('.result').forEach(el=>{
       el.addEventListener('click', ()=>{
         const item = data.results[parseInt(el.dataset.idx)];
         selectedCustomMaterial = { name: item.title, price: item.price };
@@ -327,13 +235,13 @@ document.getElementById('btn-search-material').addEventListener('click', async (
 
 function showSelectedMaterial(){
   const el = document.getElementById('f-search-selected');
-  if(!selectedCustomMaterial){ el.style.display='none'; el.innerHTML=''; return; }
-  el.style.display = 'block';
+  if(!selectedCustomMaterial){ el.classList.add('hidden'); el.innerHTML=''; return; }
+  el.classList.remove('hidden');
   el.innerHTML = `<div class="selected-material">
     <div><div class="sm-name">${escapeHtml(selectedCustomMaterial.name)}</div></div>
-    <div style="display:flex;align-items:center;gap:8px;">
-      <span class="sm-price">${fmt(selectedCustomMaterial.price)}</span>
-      <button type="button" id="btn-clear-selected">×</button>
+    <div class="inline-actions">
+      <span class="sm-price money">${fmt(selectedCustomMaterial.price)}</span>
+      <button type="button" id="btn-clear-selected" class="item-del">×</button>
     </div>
   </div>`;
   document.getElementById('btn-clear-selected').addEventListener('click', ()=>{
@@ -385,21 +293,21 @@ function renderItems(){
   el.innerHTML = items.map((it, idx)=>{
     const c = calcItem(it);
     const hasQty = it.quantity && it.quantity > 0;
-    return `<div class="item-row">
-      <div style="flex:1;">
-        <div class="desc">${escapeHtml(it.desc)}</div>
-        <div class="sub" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-          ${hasQty ? `${it.quantity} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" style="width:90px;padding:6px 8px;font-size:13px;">`}
+    return `<div class="item">
+      <div class="item-info">
+        <div class="item-desc">${escapeHtml(it.desc)}</div>
+        <div class="item-sub">
+          ${hasQty ? `${it.quantity} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
           ${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · preço a definir na visita'}
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:4px;">
-        <div class="val">${(it.unitPrice && hasQty) ? fmt(c.total) : '—'}</div>
-        <button class="del" data-idx="${idx}">×</button>
+      <div class="item-actions">
+        <div class="item-val money">${(it.unitPrice && hasQty) ? fmt(c.total) : '—'}</div>
+        <button class="item-del" data-idx="${idx}">×</button>
       </div>
     </div>`;
   }).join('');
-  el.querySelectorAll('.del').forEach(b=>{
+  el.querySelectorAll('.item-del').forEach(b=>{
     b.addEventListener('click', ()=>{ items.splice(parseInt(b.dataset.idx),1); renderItems(); });
   });
   el.querySelectorAll('[data-qty-idx]').forEach(inp=>{
@@ -415,10 +323,10 @@ function renderItems(){
 function updateEstimateOnly(){
   const box = document.getElementById('estimate-box');
   if(items.length===0){
-    box.style.display = 'none';
+    box.classList.add('hidden');
     return;
   }
-  box.style.display = 'block';
+  box.classList.remove('hidden');
   const total = items.reduce((sum,it)=> sum + calcItem(it).total, 0);
   document.getElementById('estimate-total').textContent = fmt(total);
 }

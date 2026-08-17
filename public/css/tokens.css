@@ -1,0 +1,34 @@
+:root {
+  --bg: #F8FAFC;
+  --panel: #FFFFFF;
+  --border: #E2E8F0;
+  --text: #0F172A;
+  --dim: #64748B;
+
+  --accent: #1E293B;
+  --accent-soft: #F1F5F9;
+  --accent-fg: #FFFFFF;
+
+  --pend: #C2410C;
+  --pend-bg: #FFF7ED;
+  --ok: #15803D;
+  --ok-bg: #F0FDF4;
+  --danger: #B91C1C;
+
+  --r-sm: 6px;
+  --r: 8px;
+  --r-lg: 12px;
+
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+
+  --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 4px 12px rgba(15, 23, 42, .06);
+  --shadow-pop: 0 -8px 32px rgba(15, 23, 42, .12);
+
+  --sidebar-w: 220px;
+  --detail-w: 380px;
+}
