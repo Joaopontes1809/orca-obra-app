@@ -73,3 +73,17 @@ test('admin.html carrega as folhas partilhadas e nao tem bloco <style>', () => {
   assert.match(html, /href="\/css\/admin\.css"/);
   assert.ok(!/<style[\s>]/.test(html), 'encontrado bloco <style>');
 });
+
+test('o admin nao usa dialogos nativos do browser', () => {
+  const html = ler('public/admin.html');
+  assert.ok(!/\bprompt\(/.test(html), 'ainda ha prompt()');
+  assert.ok(!/\bconfirm\(/.test(html), 'ainda ha confirm()');
+  assert.ok(!/\balert\(/.test(html), 'ainda ha alert()');
+});
+
+test('existe modal de custo extra com os tres campos', () => {
+  const html = ler('public/admin.html');
+  for (const id of ['cx-desc', 'cx-tipo', 'cx-valor']) {
+    assert.match(html, new RegExp(`id="${id}"`), `falta o campo ${id}`);
+  }
+});

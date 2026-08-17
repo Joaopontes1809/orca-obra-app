@@ -27,12 +27,7 @@
     <div class="brand">
       <img src="/icons/icon-192.png" alt="">
       <div>
-        <div class="brand-name-row">
-          <p class="brand-name" id="company-name">Sua Construtora</p>
-          <button class="edit-name" id="btn-edit-name" aria-label="Editar nome da empresa">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-          </button>
-        </div>
+        <p class="brand-name" id="company-name" contenteditable="true" aria-label="Editar nome da empresa">Sua Construtora</p>
         <p class="brand-sub">Painel de orçamentos</p>
       </div>
       <div class="brand-actions">
@@ -52,7 +47,7 @@
     <div class="brand">
       <img src="/icons/icon-192.png" alt="">
       <div>
-        <p class="brand-name" id="company-name-side">Sua Construtora</p>
+        <p class="brand-name" id="company-name-side" contenteditable="true" aria-label="Editar nome da empresa">Sua Construtora</p>
         <p class="brand-sub">Painel de orçamentos</p>
       </div>
     </div>
@@ -229,6 +224,53 @@
   </div>
 </div>
 
+<div class="overlay" id="confirm-overlay">
+  <div class="modal">
+    <h2 id="confirm-titulo"></h2>
+    <p class="dim" id="confirm-texto"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="confirm-nao">Cancelar</button>
+      <button class="btn btn-danger" id="confirm-sim"></button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Custo extra -->
+<div class="overlay" id="custo-overlay">
+  <div class="modal">
+    <h2>Custo extra</h2>
+    <p class="dim">Materiais novos, ajudantes, mão de obra extra — tudo o que não está nos itens.</p>
+    <div class="field"><label for="cx-desc">Descrição</label>
+      <input id="cx-desc" placeholder="Ex: Ajudante — 2 dias"></div>
+    <div class="field"><label for="cx-tipo">Tipo</label>
+      <select id="cx-tipo">
+        <option value="mao_de_obra">Mão de obra / ajudante</option>
+        <option value="material">Material extra</option>
+        <option value="outro">Outro</option>
+      </select></div>
+    <div class="field"><label for="cx-valor">Valor (€)</label>
+      <input id="cx-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00"></div>
+    <p class="error" id="cx-erro" hidden>Preencha a descrição e um valor maior que zero.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cx-cancelar">Cancelar</button>
+      <button class="btn btn-primary" id="cx-confirmar">Adicionar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Partilhar link -->
+<div class="overlay" id="share-overlay">
+  <div class="modal">
+    <h2>Link para o cliente</h2>
+    <p class="dim">Copie o link e envie aos seus clientes.</p>
+    <div class="field"><label for="share-link-input">Link</label>
+      <input id="share-link-input" readonly></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="share-fechar">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="detail-overlay">
   <div class="modal" id="detail-modal-content"></div>
 </div>
@@ -338,6 +380,43 @@ function showToast(msg){
   setTimeout(()=>t.classList.remove('show'), 2000);
 }
 
+/* ---------------- confirmacao (substitui o dialogo nativo) ---------------- */
+function confirmar({ titulo, texto, acao }){
+  return new Promise(resolve => {
+    const overlay = document.getElementById('confirm-overlay');
+    document.getElementById('confirm-titulo').textContent = titulo;
+    document.getElementById('confirm-texto').textContent = texto;
+    const sim = document.getElementById('confirm-sim');
+    const nao = document.getElementById('confirm-nao');
+    sim.textContent = acao;
+
+    function fechar(resposta){
+      overlay.classList.remove('open');
+      sim.removeEventListener('click', aoSim);
+      nao.removeEventListener('click', aoNao);
+      resolve(resposta);
+    }
+    function aoSim(){ fechar(true); }
+    function aoNao(){ fechar(false); }
+
+    sim.addEventListener('click', aoSim);
+    nao.addEventListener('click', aoNao);
+    overlay.classList.add('open');
+  });
+}
+
+/* ---------------- link para o cliente (fallback sem share/clipboard) ---------------- */
+function abrirLinkModal(link){
+  document.getElementById('share-link-input').value = link;
+  document.getElementById('share-overlay').classList.add('open');
+  const input = document.getElementById('share-link-input');
+  input.focus();
+  input.select();
+}
+document.getElementById('share-fechar').addEventListener('click', ()=>{
+  document.getElementById('share-overlay').classList.remove('open');
+});
+
 /* ---------------- tabs ---------------- */
 document.querySelectorAll('[data-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
@@ -350,17 +429,24 @@ function switchTab(name){
   if(name === 'agenda') loadAgendaPedidos();
 }
 
-document.getElementById('btn-edit-name').addEventListener('click', async ()=>{
-  const name = prompt('Nome da empresa:', companyName);
-  if(name && name.trim()){
-    companyName = name.trim();
-    ['company-name', 'company-name-side'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.textContent = companyName;
-    });
-    try{ await apiSend('/api/config/empresa', 'PUT', { nome: companyName }); showToast('Nome atualizado'); }
-    catch(e){ showToast('Erro ao guardar nome'); }
-  }
+/* nome da empresa: edicao inline nas duas copias (topbar e sidebar) */
+const brandNameEls = ['company-name', 'company-name-side']
+  .map(id => document.getElementById(id)).filter(Boolean);
+
+async function salvarCompanyName(origem){
+  const nome = origem.textContent.replace(/\s+/g, ' ').trim();
+  if(!nome){ origem.textContent = companyName; return; }
+  if(nome === companyName) return;
+  companyName = nome;
+  brandNameEls.forEach(el => { if(el !== origem) el.textContent = companyName; });
+  try{ await apiSend('/api/config/empresa', 'PUT', { nome: companyName }); showToast('Nome atualizado'); }
+  catch(e){ showToast('Erro ao guardar nome'); }
+}
+brandNameEls.forEach(el=>{
+  el.addEventListener('blur', ()=>salvarCompanyName(el));
+  el.addEventListener('keydown', e=>{
+    if(e.key === 'Enter'){ e.preventDefault(); el.blur(); }
+  });
 });
 
 ['btn-share-link', 'btn-share-link-side'].forEach(id => {
@@ -372,10 +458,10 @@ document.getElementById('btn-edit-name').addEventListener('click', async ()=>{
       navigator.share({ title:'Pedir orçamento', url: link }).catch(()=>{});
     } else if(navigator.clipboard){
       navigator.clipboard.writeText(link).then(()=>showToast('Link copiado: '+link)).catch(()=>{
-        prompt('Copie o link para enviar aos clientes:', link);
+        abrirLinkModal(link);
       });
     } else {
-      prompt('Copie o link para enviar aos clientes:', link);
+      abrirLinkModal(link);
     }
   });
 });
@@ -501,7 +587,11 @@ function openPendingDetail(id){
   const container = mostrarDetalhe(html);
   container.querySelector('#pd-fechar').addEventListener('click', ()=>fecharDetalhe());
   container.querySelector('#pd-recusar').addEventListener('click', async ()=>{
-    if(!confirm('Recusar este pedido? Esta ação não pode ser desfeita.')) return;
+    if(!await confirmar({
+      titulo: 'Recusar este pedido?',
+      texto: 'O pedido é apagado e não pode ser recuperado.',
+      acao: 'Recusar'
+    })) return;
     try{
       await apiSend('/api/pedidos/'+id, 'DELETE');
       pedidos = pedidos.filter(x=>x.id!==id);
@@ -659,21 +749,14 @@ function openConfirmedDetail(id){
   });
 
   container.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
-  container.querySelector('#ed-add-extra').addEventListener('click', ()=>{
-    const p = pedidos.find(x=>x.id===editingPedidoId);
-    const nome = prompt('Nome do custo (ex: Cimento extra, Ajudante João):');
-    if(!nome || !nome.trim()) return;
-    const tipo = prompt('Tipo (material / ajudante / mao_de_obra_extra / outro):', 'material') || 'outro';
-    const valor = parseFloat(prompt('Valor (€):', '0')) || 0;
-    if(!p.extras) p.extras = [];
-    p.extras.push({ id: uid(), nome: nome.trim(), tipo: tipo.trim(), valor });
-    renderEditExtras();
-    updateEditTotals();
-    showToast('Custo adicionado');
-  });
+  container.querySelector('#ed-add-extra').addEventListener('click', ()=>openCustoModal());
   container.querySelector('#ed-close').addEventListener('click', ()=>{ fecharDetalhe(); editingPedidoId=null; });
   container.querySelector('#ed-delete').addEventListener('click', async ()=>{
-    if(!confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return;
+    if(!await confirmar({
+      titulo: 'Excluir este orçamento?',
+      texto: 'O orçamento e os seus itens são apagados e não podem ser recuperados.',
+      acao: 'Excluir'
+    })) return;
     try{
       await apiSend('/api/pedidos/'+id, 'DELETE');
       pedidos = pedidos.filter(x=>x.id!==id);
@@ -703,6 +786,33 @@ function openConfirmedDetail(id){
     }catch(e){ showToast('Erro ao guardar orçamento'); }
   });
 }
+
+/* ---------------- modal de custo extra ---------------- */
+const custoOverlay = document.getElementById('custo-overlay');
+function openCustoModal(){
+  document.getElementById('cx-desc').value = '';
+  document.getElementById('cx-tipo').value = 'mao_de_obra';
+  document.getElementById('cx-valor').value = '';
+  document.getElementById('cx-erro').hidden = true;
+  custoOverlay.classList.add('open');
+}
+document.getElementById('cx-cancelar').addEventListener('click', ()=>custoOverlay.classList.remove('open'));
+document.getElementById('cx-confirmar').addEventListener('click', ()=>{
+  const nome = document.getElementById('cx-desc').value.trim();
+  const tipo = document.getElementById('cx-tipo').value;
+  const valor = parseFloat(document.getElementById('cx-valor').value);
+  if(!nome || isNaN(valor) || valor<=0){
+    document.getElementById('cx-erro').hidden = false;
+    return;
+  }
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p.extras) p.extras = [];
+  p.extras.push({ id: uid(), nome, tipo, valor });
+  custoOverlay.classList.remove('open');
+  renderEditExtras();
+  updateEditTotals();
+  showToast('Custo adicionado');
+});
 
 function renderEditItems(){
   const el = document.getElementById('ed-items');
