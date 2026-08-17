@@ -37,3 +37,19 @@ test('as fontes antigas foram removidas', () => {
     assert.ok(!/IBM\+?Plex\+?Mono/i.test(conteudo), `IBM Plex Mono ainda em ${p}`);
   }
 });
+
+test('shared.js expoe as funcoes comuns', () => {
+  const js = ler('public/js/shared.js');
+  for (const nome of ['fmt', 'fmtDate', 'escapeHtml', 'uid', 'apiGet', 'apiSend']) {
+    assert.match(js, new RegExp(`function ${nome}\\b`), `falta ${nome}`);
+  }
+});
+
+test('as paginas carregam shared.js e nao redefinem as funcoes', () => {
+  for (const p of ['public/pedido.html', 'public/admin.html']) {
+    const html = ler(p);
+    assert.match(html, /src="\/js\/shared\.js"/, `${p} nao carrega shared.js`);
+    assert.ok(!/function escapeHtml\b/.test(html), `${p} ainda define escapeHtml`);
+    assert.ok(!/const fmt =/.test(html), `${p} ainda define fmt`);
+  }
+});

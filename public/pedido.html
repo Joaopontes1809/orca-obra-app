@@ -114,10 +114,8 @@
   </div>
 </div>
 
+<script src="/js/shared.js"></script>
 <script>
-const fmt = n => (Math.round((n||0)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-
 let catalog = { services: [], materials: [] };
 let items = [];
 
@@ -133,9 +131,6 @@ async function load(){
   const sel = document.getElementById('f-servico');
   sel.innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   populateMaterial();
-}
-function escapeHtml(s){
-  return String(s==null?'':s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 function populateMaterial(){
   const sid = document.getElementById('f-servico').value;

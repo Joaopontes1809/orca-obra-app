@@ -408,11 +408,8 @@
   <button class="btn btn-primary btn-block" id="btn-novo-orcamento">+ Novo orçamento</button>
 </div>
 
+<script src="/js/shared.js"></script>
 <script>
-const fmt = n => (Math.round((n||0)*100)/100).toLocaleString('pt-PT',{style:'currency',currency:'EUR'});
-const fmtDate = s => s ? new Date(s).toLocaleDateString('pt-PT',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
-const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
-
 let catalog = { services: [], materials: [] };
 let companyName = 'Sua Construtora';
 let pedidos = [];
@@ -426,17 +423,6 @@ let editingMaterialId = null;
 let editingAgendaId = null;
 
 /* ---------------- API ---------------- */
-async function apiGet(url){
-  const r = await fetch(url);
-  if(!r.ok) throw new Error('erro');
-  return r.json();
-}
-async function apiSend(url, method, body){
-  const r = await fetch(url, { method, headers:{'Content-Type':'application/json'}, body: body!==undefined ? JSON.stringify(body) : undefined });
-  if(!r.ok) throw new Error('erro');
-  return r.json();
-}
-
 async function loadAll(){
   const [cfgR, listR, agR] = await Promise.allSettled([
     apiGet('/api/config'), apiGet('/api/pedidos'), apiGet('/api/agenda')
@@ -465,9 +451,6 @@ function showToast(msg){
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'), 2000);
-}
-function escapeHtml(s){
-  return String(s==null?'':s).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
 /* ---------------- tabs ---------------- */
