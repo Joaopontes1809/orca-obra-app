@@ -97,9 +97,9 @@
     </div>
     <div class="field">
       <label>Material</label>
-      <div style="display:flex;gap:8px;">
-        <select id="im-material" style="flex:1;"></select>
-        <button type="button" class="btn btn-sm" id="im-search-price" title="Pesquisar preço na internet" style="flex-shrink:0;">
+      <div class="field-row">
+        <select id="im-material"></select>
+        <button type="button" class="btn btn-sm" id="im-search-price" title="Pesquisar preço na internet">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
         </button>
       </div>
@@ -425,7 +425,7 @@ function switchTab(name){
   activeTab = name;
   document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
   document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
-  document.getElementById('fab-confirmados').style.display = (name==='confirmados') ? 'block' : 'none';
+  document.getElementById('fab-confirmados').classList.toggle('show', name==='confirmados');
   if(name === 'agenda') loadAgendaPedidos();
 }
 
@@ -494,7 +494,7 @@ function renderAll(){
   if(detalheAbertoId == null){
     document.getElementById('detail-panel').innerHTML = detalheVazio();
   }
-  document.getElementById('fab-confirmados').style.display = (activeTab==='confirmados') ? 'block' : 'none';
+  document.getElementById('fab-confirmados').classList.toggle('show', activeTab==='confirmados');
 }
 
 /* ---------------- pendentes ---------------- */
@@ -677,18 +677,18 @@ function openConfirmedDetail(id){
     <div class="field">
       <label>Observações internas</label>
       <textarea id="ed-obs" placeholder="Notas da equipa, prazos, acordos combinados...">${escapeHtml(p.observacoes_internas||'')}</textarea>
-      <button type="button" class="btn btn-sm" id="ed-ai-assist" style="margin-top:8px;border-color:var(--accent);color:var(--accent);">✦ Sugerir com IA</button>
-      <p class="search-status" id="ed-ai-status" style="font-size:12px;color:var(--text-faint);margin-top:6px;"></p>
+      <button type="button" class="btn btn-sm btn-ai mt-2" id="ed-ai-assist">✦ Sugerir com IA</button>
+      <p class="hint" id="ed-ai-status"></p>
     </div>
 
     <h2 class="section">Itens do orçamento</h2>
     <div id="ed-items"></div>
-    <button class="btn btn-block" id="ed-add-item" style="margin-top:6px;">+ Adicionar item</button>
+    <button class="btn btn-block mt-2" id="ed-add-item">+ Adicionar item</button>
 
     <h2 class="section">Custos adicionais</h2>
-    <p style="color:var(--text-faint);font-size:12.5px;margin:-6px 0 10px 2px;">Materiais novos, ajudantes, mão de obra extra — tudo que não está nos itens acima.</p>
+    <p class="hint">Materiais novos, ajudantes, mão de obra extra — tudo que não está nos itens acima.</p>
     <div id="ed-extras"></div>
-    <button class="btn btn-block" id="ed-add-extra" style="margin-top:6px;background:var(--accent-soft);border-color:var(--border-strong);color:var(--accent);">+ Adicionar custo extra</button>
+    <button class="btn btn-block btn-highlight mt-2" id="ed-add-extra">+ Adicionar custo extra</button>
 
     <div class="total-box">
       <div class="line"><span>Material (itens)</span><span class="num" id="ed-tot-material">${fmt(t.material)}</span></div>
@@ -818,7 +818,7 @@ function renderEditItems(){
   const el = document.getElementById('ed-items');
   if(!el) return;
   if(draftItems.length===0){
-    el.innerHTML = `<p style="color:var(--text-faint);font-size:13.5px;margin:6px 0 0 2px;">Nenhum item adicionado ainda.</p>`;
+    el.innerHTML = `<p class="hint">Nenhum item adicionado ainda.</p>`;
   } else {
     el.innerHTML = draftItems.map((it, idx)=>{
       const c = calcItem(it);
@@ -828,7 +828,7 @@ function renderEditItems(){
           <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
           <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${it.laborPercent}%</div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;">
+        <div class="row-inline">
           <div class="val num">${fmt(c.total)}</div>
           <button class="del" data-idx="${idx}">×</button>
         </div>
@@ -857,6 +857,7 @@ function updateEditTotals(){
 }
 
 /* ---------------- custos extras (materiais novos, ajudantes...) ---------------- */
+const TIPO_EXTRA_LABELS = { mao_de_obra: 'Mão de obra / ajudante', material: 'Material extra', outro: 'Outro' };
 function renderEditExtras(){
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p) return;
@@ -864,15 +865,15 @@ function renderEditExtras(){
   const el = document.getElementById('ed-extras');
   if(!el) return;
   if(extras.length===0){
-    el.innerHTML = `<p style="color:var(--text-faint);font-size:13.5px;margin:6px 0 0 2px;">Nenhum custo extra adicionado ainda.</p>`;
+    el.innerHTML = `<p class="hint">Nenhum custo extra adicionado ainda.</p>`;
   } else {
     el.innerHTML = extras.map((e, idx)=>`
       <div class="item-row">
         <div>
           <div class="desc">${escapeHtml(e.nome || 'Custo')}</div>
-          <div class="sub">${escapeHtml(e.tipo || 'outro')}</div>
+          <div class="sub">${escapeHtml(TIPO_EXTRA_LABELS[e.tipo] || e.tipo || 'Outro')}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:4px;">
+        <div class="row-inline">
           <div class="val num">${fmt(parseFloat(e.valor)||0)}</div>
           <button class="del" data-extra-idx="${idx}">×</button>
         </div>
@@ -969,27 +970,45 @@ document.getElementById('im-confirm').addEventListener('click', ()=>{
 /* ---------------- catalogo ---------------- */
 function renderCatalogView(){
   const svcEl = document.getElementById('cat-services');
-  svcEl.innerHTML = catalog.services.map(s=>`
-    <div class="cat-row">
-      <div class="info" style="flex:1;cursor:pointer;" data-svc-edit="${s.id}"><div class="name">${escapeHtml(s.name)}</div><div class="meta">unidade: ${escapeHtml(s.unit)}</div></div>
-      <input type="number" min="0" step="1" value="${s.laborPercent}" data-svc="${s.id}" class="svc-labor" style="width:64px;">
-      <span style="color:var(--text-dim);font-size:13px;">%</span>
-      <button class="del" data-svc-del="${s.id}">×</button>
-    </div>
-  `).join('');
+  if(catalog.services.length===0){
+    svcEl.innerHTML = `<p class="hint">Nenhum serviço cadastrado ainda.</p>`;
+  } else {
+    svcEl.innerHTML = catalog.services.map(s=>`
+      <div class="item">
+        <div class="item-info" data-svc-edit="${s.id}">
+          <div class="item-name">${escapeHtml(s.name)}</div>
+          <div class="item-meta">unidade: ${escapeHtml(s.unit)}</div>
+        </div>
+        <div class="item-actions">
+          <input type="number" min="0" step="1" value="${s.laborPercent}" data-svc="${s.id}" class="item-input svc-labor">
+          <span class="item-suffix">%</span>
+          <button class="item-del" data-svc-del="${s.id}">×</button>
+        </div>
+      </div>
+    `).join('');
+  }
 
   const matEl = document.getElementById('cat-materials');
-  matEl.innerHTML = catalog.materials.map(m=>{
-    const s = catalog.services.find(s=>s.id===m.serviceId);
-    return `<div class="cat-row">
-      <div class="info" style="flex:1;cursor:pointer;" data-mat-edit="${m.id}"><div class="name">${escapeHtml(m.name)}</div><div class="meta">${s?escapeHtml(s.name):'—'} · por ${escapeHtml(m.unit)}</div></div>
-      <input type="number" min="0" step="0.01" value="${m.price}" data-mat="${m.id}" class="mat-price" style="width:80px;">
-      <button class="del" data-mat-search="${m.id}" title="Pesquisar preço na internet">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-      </button>
-      <button class="del" data-mat-del="${m.id}">×</button>
-    </div>`;
-  }).join('');
+  if(catalog.materials.length===0){
+    matEl.innerHTML = `<p class="hint">Nenhum material cadastrado ainda.</p>`;
+  } else {
+    matEl.innerHTML = catalog.materials.map(m=>{
+      const s = catalog.services.find(s=>s.id===m.serviceId);
+      return `<div class="item">
+        <div class="item-info" data-mat-edit="${m.id}">
+          <div class="item-name">${escapeHtml(m.name)}</div>
+          <div class="item-meta">${s?escapeHtml(s.name):'—'} · por ${escapeHtml(m.unit)}</div>
+        </div>
+        <div class="item-actions">
+          <input type="number" min="0" step="0.01" value="${m.price}" data-mat="${m.id}" class="item-input mat-price">
+          <button class="item-del" data-mat-search="${m.id}" title="Pesquisar preço na internet">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+          </button>
+          <button class="item-del" data-mat-del="${m.id}">×</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
 
   svcEl.querySelectorAll('.svc-labor').forEach(inp=>{
     inp.addEventListener('change', async ()=>{
@@ -1101,11 +1120,11 @@ document.getElementById('mat-confirm').addEventListener('click', async ()=>{
 
 /* ---------------- agenda (calendário) ---------------- */
 const TIPO_AGENDA = {
-  visita:  { label:'Visita',        color:'#2563eb', bg:'rgba(37,99,235,0.10)' },
-  obra:    { label:'Início obra',   color:'#16a34a', bg:'rgba(22,163,74,0.10)' },
-  entrega: { label:'Entrega material', color:'#d97706', bg:'rgba(217,119,6,0.10)' },
-  reuniao: { label:'Reunião',       color:'#7c3aed', bg:'rgba(124,58,237,0.10)' },
-  outro:   { label:'Outro',         color:'#64748b', bg:'rgba(100,116,139,0.10)' }
+  visita:  { label:'Visita',           classe:'tag-pend' },
+  obra:    { label:'Início obra',      classe:'tag-ok' },
+  entrega: { label:'Entrega material', classe:'tag' },
+  reuniao: { label:'Reunião',          classe:'tag' },
+  outro:   { label:'Outro',            classe:'tag' }
 };
 
 async function loadAgendaPedidos(){
@@ -1134,10 +1153,9 @@ function renderAgenda(){
   if(!el) return;
   if(agenda.length===0){
     el.innerHTML = `<div class="empty">
-      <div class="empty-icon" style="font-size:40px;">📅</div>
-      <p class="lead">Sem eventos agendados</p>
+      <h2>Sem eventos agendados</h2>
       <p>Organize visitas, obras e reuniões no calendário.</p>
-      <button class="btn btn-primary" id="agenda-empty-add" style="margin-top:8px;">+ Adicionar evento</button>
+      <button class="btn btn-primary mt-2" id="agenda-empty-add">+ Adicionar evento</button>
     </div>`;
     const add = document.getElementById('agenda-empty-add');
     if(add) add.addEventListener('click', ()=>openAgendaModal(null));
@@ -1146,24 +1164,23 @@ function renderAgenda(){
 
   const groups = agendaGrouped();
   el.innerHTML = `
-    <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+    <div class="section-head">
+      <h2 class="section">Eventos</h2>
       <button class="btn btn-primary btn-sm" id="agenda-add">+ Adicionar evento</button>
     </div>
     ${groups.map(([data, evs])=>`
       <div class="agenda-day">
-        <div class="agenda-date">${fmtAgendaDate(data)}</div>
+        <h3 class="agenda-date">${fmtAgendaDate(data)}</h3>
         <div class="agenda-events">
           ${evs.map(ev=>{
             const t = TIPO_AGENDA[ev.tipo] || TIPO_AGENDA.outro;
             const pedido = ev.pedidoId ? pedidos.find(p=>String(p.id)===String(ev.pedidoId)) : null;
-            return `<div class="agenda-card" data-agenda="${ev.id}" style="cursor:pointer;">
-              <span class="chip" style="color:${t.color};background:${t.bg};">${t.label}</span>
-              <div class="agenda-body">
-                <div class="agenda-title">${escapeHtml(ev.titulo || 'Evento')}</div>
-                ${pedido ? `<div class="agenda-sub">📋 ${escapeHtml(pedido.nome_cliente || 'Cliente')}</div>` : ''}
-                ${ev.nota ? `<div class="agenda-sub">${escapeHtml(ev.nota)}</div>` : ''}
-              </div>
-            </div>`;
+            return `<article class="card card-clickable" data-agenda="${ev.id}">
+              <span class="tag ${t.classe}">${escapeHtml(t.label)}</span>
+              <h3 class="agenda-title">${escapeHtml(ev.titulo || 'Evento')}</h3>
+              ${pedido ? `<p class="dim agenda-sub">${escapeHtml(pedido.nome_cliente || 'Cliente')}</p>` : ''}
+              ${ev.nota ? `<p class="dim agenda-sub">${escapeHtml(ev.nota)}</p>` : ''}
+            </article>`;
           }).join('')}
         </div>
       </div>
@@ -1268,37 +1285,37 @@ function renderStats(){
 
   if(total===0){
     el.innerHTML = `<div class="empty">
-      <img class="empty-icon" src="/icons/icon-192.png" alt="">
-      <p class="lead">Ainda sem dados</p>
+      <h2>Ainda sem dados</h2>
       <p>As estatísticas aparecem aqui assim que houver pedidos e orçamentos confirmados.</p>
     </div>`;
     return;
   }
 
   el.innerHTML = `
-    <div class="stat-grid">
-      <div class="stat-box"><div class="num-big">${total}</div><div class="lbl">Pedidos recebidos</div></div>
-      <div class="stat-box"><div class="num-big">${confirmadosCount}</div><div class="lbl">Confirmados</div></div>
-      <div class="stat-box"><div class="num-big">${pendentesCount}</div><div class="lbl">Pendentes</div></div>
-      <div class="stat-box"><div class="num-big">${taxa}%</div><div class="lbl">Taxa de confirmação</div></div>
-      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(valorTotal)}</div><div class="lbl">Valor total confirmado</div></div>
-      <div class="stat-box" style="grid-column:1/-1;background:var(--bg-soft);">
-        <div class="breakdown">
-          <div class="bd-row"><span>Material (itens)</span><span class="num">${fmt(totalMaterial)}</span></div>
-          <div class="bd-row"><span>Mão de obra (itens)</span><span class="num">${fmt(totalMao)}</span></div>
-          <div class="bd-row"><span>Custos adicionais</span><span class="num">${fmt(totalExtras)}</span></div>
+    <div class="stats">
+      <div class="stat"><div class="v">${total}</div><div class="k">Pedidos recebidos</div></div>
+      <div class="stat"><div class="v">${confirmadosCount}</div><div class="k">Confirmados</div></div>
+      <div class="stat"><div class="v">${pendentesCount}</div><div class="k">Pendentes</div></div>
+      <div class="stat"><div class="v">${taxa}%</div><div class="k">Taxa de confirmação</div></div>
+      <div class="stat stat-wide"><div class="v money">${fmt(valorTotal)}</div><div class="k">Valor total confirmado</div></div>
+      <div class="stat stat-wide">
+        <div class="stat-rows">
+          <div class="stat-row"><span>Material (itens)</span><span class="money">${fmt(totalMaterial)}</span></div>
+          <div class="stat-row"><span>Mão de obra (itens)</span><span class="money">${fmt(totalMao)}</span></div>
+          <div class="stat-row"><span>Custos adicionais</span><span class="money">${fmt(totalExtras)}</span></div>
         </div>
       </div>
-      <div class="stat-box" style="grid-column:1/-1;"><div class="num-big">${fmt(ticketMedio)}</div><div class="lbl">Valor médio por orçamento confirmado</div></div>
+      <div class="stat stat-wide"><div class="v money">${fmt(ticketMedio)}</div><div class="k">Valor médio por orçamento confirmado</div></div>
     </div>
     ${servicoEntries.length ? `
       <h2 class="section">Valor por tipo de serviço</h2>
-      ${servicoEntries.map(([name,val])=>`
-        <div class="bar-row">
-          <div class="bar-top"><span>${escapeHtml(name)}</span><span class="n num">${fmt(val)}</span></div>
-          <div class="bar-track"><div class="bar-fill" style="width:${maxServico>0 ? (val/maxServico*100) : 0}%"></div></div>
-        </div>
-      `).join('')}
+      ${servicoEntries.map(([name,val])=>{
+        const pct = maxServico>0 ? Math.min(100, Math.round((val/maxServico*100)/5)*5) : 0;
+        return `<div class="bar">
+          <div class="bar-top"><span>${escapeHtml(name)}</span><span class="money">${fmt(val)}</span></div>
+          <div class="bar-track"><div class="bar-fill w-${pct}"></div></div>
+        </div>`;
+      }).join('')}
     ` : ''}
   `;
 }

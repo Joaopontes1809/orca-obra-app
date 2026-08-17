@@ -103,6 +103,15 @@ test('mostrarDetalhe escolhe painel ou modal conforme a largura', async () => {
   dom.window.close();
 });
 
+test('os renders de agenda, catalogo e estatisticas nao geram estilo inline', async () => {
+  const dom = await carregar();
+  for (const id of ['tab-agenda', 'tab-catalogo', 'tab-stats']) {
+    const html = dom.window.document.getElementById(id).innerHTML;
+    assert.ok(!/\sstyle="/.test(html), `estilo inline em ${id}`);
+  }
+  dom.window.close();
+});
+
 test('abaixo de 1280 o detalhe vai para o modal', async () => {
   const dom = await carregar();
   const { window } = dom;
