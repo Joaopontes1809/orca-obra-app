@@ -82,3 +82,12 @@ test('a agenda mostra o estado vazio quando a sua rota falha', async () => {
   assert.match(html, /Sem eventos agendados/, 'renderAgenda() tem de correr mesmo com a rota em baixo');
   dom.window.close();
 });
+
+test('os cartoes de pendentes usam as classes do sistema visual', async () => {
+  const dom = await carregar();
+  const el = dom.window.document.getElementById('tab-pendentes');
+  assert.ok(el.querySelector('.card'), 'esperava um .card');
+  assert.ok(el.querySelector('.tag-pend'), 'esperava a etiqueta de pendente');
+  assert.ok(!/\sstyle="/.test(el.innerHTML), 'estilo inline no markup gerado');
+  dom.window.close();
+});

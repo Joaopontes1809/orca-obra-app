@@ -55,6 +55,11 @@
 
 .list { display: grid; grid-template-columns: 1fr; gap: var(--s-3); }
 
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--s-3); }
+.card-top .money { color: var(--accent); white-space: nowrap; }
+.card-tags { display: flex; gap: var(--s-1); flex-wrap: wrap; margin-top: var(--s-3); }
+.card-desc { font-size: 13px; margin-top: var(--s-2); }
+
 .detail-panel { display: none; }
 
 /* linha de título + ação, usada nos cabeçalhos estáticos das tabs */

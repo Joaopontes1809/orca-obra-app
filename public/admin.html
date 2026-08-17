@@ -370,33 +370,33 @@ function renderPendentes(){
 
   if(list.length===0){
     el.innerHTML = `<div class="empty">
-      <img class="empty-icon" src="/icons/icon-192.png" alt="">
-      <p class="lead">Nenhum pedido pendente</p>
+      <h2>Nenhum pedido pendente</h2>
       <p>Partilhe o link de pedido de orçamento com os clientes — os pedidos aparecem aqui automaticamente.</p>
     </div>`;
     return;
   }
-  el.innerHTML = list.map(p=>{
+  el.innerHTML = `<div class="list">${list.map(p=>{
     const t = calcTotals(p.itens);
     const services = [...new Set((p.itens||[]).map(it=>{
       const s = catalog.services.find(s=>s.id===it.serviceId);
       return s ? s.name : null;
     }).filter(Boolean))];
-    return `<div class="card proj-card" data-id="${p.id}">
-      <div class="proj-top">
+    const servicos = services.length ? services : (p.tipo_servico ? [p.tipo_servico] : []);
+    return `<article class="card card-clickable" data-id="${p.id}">
+      <div class="card-top">
         <div>
-          <p class="proj-name">${escapeHtml(p.nome_cliente||'Sem nome')}</p>
-          <p class="proj-meta">${escapeHtml(p.morada||'')}${p.telefone ? ' · '+escapeHtml(p.telefone) : ''}</p>
+          <h3>${escapeHtml(p.nome_cliente || 'Sem nome')}</h3>
+          <p class="dim">${escapeHtml(p.morada || '')}${p.telefone ? ' · ' + escapeHtml(p.telefone) : ''}</p>
         </div>
-        ${t.total>0 ? `<div class="proj-total num" style="color:var(--amber);">~${fmt(t.total)}</div>` : ''}
+        ${t.total > 0 ? `<span class="money">~${fmt(t.total)}</span>` : ''}
       </div>
-      <div class="proj-tags">
-        ${services.length ? services.map(s=>`<span class="tag tag-pending">${escapeHtml(s)}</span>`).join('') : (p.tipo_servico ? `<span class="tag tag-pending">${escapeHtml(p.tipo_servico)}</span>` : '')}
+      <div class="card-tags">
+        ${servicos.map(s => `<span class="tag tag-pend">${escapeHtml(s)}</span>`).join('')}
       </div>
-      ${p.descricao ? `<p class="proj-desc">${escapeHtml(p.descricao)}</p>` : ''}
-    </div>`;
-  }).join('');
-  el.querySelectorAll('.proj-card').forEach(card=>{
+      ${p.descricao ? `<p class="card-desc dim">${escapeHtml(p.descricao)}</p>` : ''}
+    </article>`;
+  }).join('')}</div>`;
+  el.querySelectorAll('.card').forEach(card=>{
     card.addEventListener('click', ()=>openPendingDetail(parseInt(card.dataset.id)));
   });
 }
@@ -474,13 +474,12 @@ function renderConfirmados(){
   const list = pedidos.filter(p=>p.status==='confirmado').sort((a,b)=> new Date(b.confirmado_em||b.created_at) - new Date(a.confirmado_em||a.created_at));
   if(list.length===0){
     el.innerHTML = `<div class="empty">
-      <img class="empty-icon" src="/icons/icon-192.png" alt="">
-      <p class="lead">Nenhum orçamento confirmado</p>
+      <h2>Nenhum orçamento confirmado</h2>
       <p>Confirme um pedido pendente ou toque em "+ Novo orçamento" para criar um diretamente.</p>
     </div>`;
     return;
   }
-  el.innerHTML = list.map(p=>{
+  el.innerHTML = `<div class="list">${list.map(p=>{
     const t = calcTotals(p.itens);
     const extra = calcExtras(p);
     const realTotal = t.total + extra;
@@ -488,18 +487,20 @@ function renderConfirmados(){
       const s = catalog.services.find(s=>s.id===it.serviceId);
       return s ? s.name : null;
     }).filter(Boolean))];
-    return `<div class="card proj-card" data-id="${p.id}">
-      <div class="proj-top">
+    return `<article class="card card-clickable" data-id="${p.id}">
+      <div class="card-top">
         <div>
-          <p class="proj-name">${escapeHtml(p.nome_orcamento || p.nome_cliente || 'Orçamento')}</p>
-          <p class="proj-meta">${escapeHtml(p.nome_cliente||'')}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+          <h3>${escapeHtml(p.nome_orcamento || p.nome_cliente || 'Orçamento')}</h3>
+          <p class="dim">${escapeHtml(p.nome_cliente || '')}${p.morada ? ' · ' + escapeHtml(p.morada) : ''}</p>
         </div>
-        <div class="proj-total num">${fmt(realTotal)}</div>
+        <span class="money">${fmt(realTotal)}</span>
       </div>
-      ${services.length ? `<div class="proj-tags">${services.map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}</div>` : ''}
-    </div>`;
-  }).join('');
-  el.querySelectorAll('.proj-card').forEach(card=>{
+      <div class="card-tags">
+        ${services.map(s => `<span class="tag tag-ok">${escapeHtml(s)}</span>`).join('')}
+      </div>
+    </article>`;
+  }).join('')}</div>`;
+  el.querySelectorAll('.card').forEach(card=>{
     card.addEventListener('click', ()=>openConfirmedDetail(parseInt(card.dataset.id)));
   });
 }
