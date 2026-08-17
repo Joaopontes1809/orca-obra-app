@@ -91,3 +91,24 @@ test('os cartoes de pendentes usam as classes do sistema visual', async () => {
   assert.ok(!/\sstyle="/.test(el.innerHTML), 'estilo inline no markup gerado');
   dom.window.close();
 });
+
+test('mostrarDetalhe escolhe painel ou modal conforme a largura', async () => {
+  const dom = await carregar();
+  const { window } = dom;
+  // acima de 1280 o detalhe vai para o painel lateral
+  window.matchMedia = q => ({ matches: /1280/.test(q), media: q, addListener(){}, removeListener(){} });
+  window.mostrarDetalhe('<p id="prova">olá</p>');
+  assert.ok(window.document.querySelector('#detail-panel #prova'), 'esperava o detalhe no painel');
+  assert.ok(!window.document.getElementById('detail-overlay').classList.contains('open'));
+  dom.window.close();
+});
+
+test('abaixo de 1280 o detalhe vai para o modal', async () => {
+  const dom = await carregar();
+  const { window } = dom;
+  window.matchMedia = q => ({ matches: false, media: q, addListener(){}, removeListener(){} });
+  window.mostrarDetalhe('<p id="prova">olá</p>');
+  assert.ok(window.document.querySelector('#detail-overlay #prova'), 'esperava o detalhe no modal');
+  assert.ok(window.document.getElementById('detail-overlay').classList.contains('open'));
+  dom.window.close();
+});

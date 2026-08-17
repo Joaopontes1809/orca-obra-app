@@ -253,6 +253,57 @@ let editingServiceId = null;
 let editingMaterialId = null;
 let editingAgendaId = null;
 
+const ECRA_LARGO = '(min-width: 1280px)';
+
+// Qual pedido esta aberto no detalhe, e como o voltar a desenhar quando a
+// largura muda de lado do ponto de rutura.
+let detalheAbertoId = null;
+let detalheAbertoTipo = null; // 'pendente' | 'confirmado'
+
+function ecraLargo(){
+  return window.matchMedia(ECRA_LARGO).matches;
+}
+
+function reabrirDetalhe(){
+  if(detalheAbertoId == null) return;
+  if(detalheAbertoTipo === 'pendente') openPendingDetail(detalheAbertoId);
+  else openConfirmedDetail(detalheAbertoId);
+}
+
+// Mesmo conteudo, contentor diferente conforme o espaco disponivel.
+function mostrarDetalhe(html){
+  const painel = document.getElementById('detail-panel');
+  const overlay = document.getElementById('detail-overlay');
+  const modal = document.getElementById('detail-modal-content');
+  if(ecraLargo()){
+    overlay.classList.remove('open');
+    modal.innerHTML = '';
+    painel.innerHTML = html;
+    return painel;
+  }
+  painel.innerHTML = '';
+  modal.innerHTML = html;
+  overlay.classList.add('open');
+  return modal;
+}
+
+function fecharDetalhe(){
+  detalheAbertoId = null;
+  detalheAbertoTipo = null;
+  document.getElementById('detail-overlay').classList.remove('open');
+  document.getElementById('detail-modal-content').innerHTML = '';
+  document.getElementById('detail-panel').innerHTML = detalheVazio();
+  document.querySelectorAll('.card-selected').forEach(c => c.classList.remove('card-selected'));
+}
+
+function detalheVazio(){
+  return `<div class="empty"><p>Escolha um pedido para ver o orçamento.</p></div>`;
+}
+
+if(typeof window.matchMedia === 'function'){
+  window.matchMedia(ECRA_LARGO).addEventListener('change', reabrirDetalhe);
+}
+
 /* ---------------- API ---------------- */
 async function loadAll(){
   const [cfgR, listR, agR] = await Promise.allSettled([
@@ -354,6 +405,9 @@ function renderAll(){
   renderAgenda();
   renderCatalogView();
   renderStats();
+  if(detalheAbertoId == null){
+    document.getElementById('detail-panel').innerHTML = detalheVazio();
+  }
   document.getElementById('fab-confirmados').style.display = (activeTab==='confirmados') ? 'block' : 'none';
 }
 
@@ -404,8 +458,12 @@ function renderPendentes(){
 function openPendingDetail(id){
   const p = pedidos.find(p=>p.id===id);
   if(!p) return;
-  const overlay = document.getElementById('detail-overlay');
-  const content = document.getElementById('detail-modal-content');
+  detalheAbertoId = id;
+  detalheAbertoTipo = 'pendente';
+  document.querySelectorAll('.card-selected').forEach(c => c.classList.remove('card-selected'));
+  const cartao = document.querySelector(`.card[data-id="${id}"]`);
+  if(cartao) cartao.classList.add('card-selected');
+
   const t = calcTotals(p.itens);
   const itemsHtml = (p.itens||[]).length ? (p.itens||[]).map(it=>{
     const c = calcItem(it);
@@ -417,7 +475,7 @@ function openPendingDetail(id){
       <div class="val num">${it.unitPrice ? fmt(c.total) : '—'}</div>
     </div>`;
   }).join('') : '';
-  content.innerHTML = `
+  const html = `
     <h3>${escapeHtml(p.nome_cliente||'Pedido')}</h3>
     <p class="sub-h">Recebido em ${fmtDate(p.created_at)}</p>
     <div class="info-grid">
@@ -440,32 +498,31 @@ function openPendingDetail(id){
       <button class="btn btn-primary" id="pd-confirmar">Confirmar e assumir</button>
     </div>
   `;
-  content.querySelector('#pd-fechar').addEventListener('click', ()=>overlay.classList.remove('open'));
-  content.querySelector('#pd-recusar').addEventListener('click', async ()=>{
+  const container = mostrarDetalhe(html);
+  container.querySelector('#pd-fechar').addEventListener('click', ()=>fecharDetalhe());
+  container.querySelector('#pd-recusar').addEventListener('click', async ()=>{
     if(!confirm('Recusar este pedido? Esta ação não pode ser desfeita.')) return;
     try{
       await apiSend('/api/pedidos/'+id, 'DELETE');
       pedidos = pedidos.filter(x=>x.id!==id);
-      overlay.classList.remove('open');
+      fecharDetalhe();
       renderPendentes();
       showToast('Pedido recusado');
     }catch(e){ showToast('Erro ao recusar pedido'); }
   });
-  content.querySelector('#pd-confirmar').addEventListener('click', async ()=>{
+  container.querySelector('#pd-confirmar').addEventListener('click', async ()=>{
     try{
       const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
         status:'confirmado',
         nome_orcamento: p.tipo_servico ? (p.tipo_servico+' — '+p.nome_cliente) : p.nome_cliente
       });
-      pedidos = pedidos.map(x=>x.id===id ? updated : x);
-      overlay.classList.remove('open');
+      pedidos = pedidos.map(x => x.id === id ? updated : x);
       renderAll();
-      switchTab('confirmados');
-      showToast('Pedido confirmado — pode agora montar o orçamento');
+      if(!ecraLargo()) switchTab('confirmados');
       openConfirmedDetail(id);
+      showToast('Pedido confirmado — pode agora montar o orçamento');
     }catch(e){ showToast('Erro ao confirmar pedido'); }
   });
-  overlay.classList.add('open');
 }
 
 /* ---------------- confirmados ---------------- */
@@ -511,11 +568,14 @@ function openConfirmedDetail(id){
   editingPedidoId = id;
   draftItems = JSON.parse(JSON.stringify(p.itens||[]));
   itemModalTargetIsDraft = true;
+  detalheAbertoId = id;
+  detalheAbertoTipo = 'confirmado';
+  document.querySelectorAll('.card-selected').forEach(c => c.classList.remove('card-selected'));
+  const cartao = document.querySelector(`.card[data-id="${id}"]`);
+  if(cartao) cartao.classList.add('card-selected');
 
-  const overlay = document.getElementById('detail-overlay');
-  const content = document.getElementById('detail-modal-content');
   const t = calcTotals(draftItems);
-  content.innerHTML = `
+  const html = `
     <h3>Orçamento</h3>
     <p class="sub-h">${p.nome_cliente ? escapeHtml(p.nome_cliente) : 'Cliente não indicado'}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
     <div class="field"><label>Nome do orçamento</label><input id="ed-nome" value="${escapeHtml(p.nome_orcamento||'')}" placeholder="Ex: Reforma cozinha"></div>
@@ -553,12 +613,13 @@ function openConfirmedDetail(id){
       <button class="btn btn-primary" id="ed-save">Guardar</button>
     </div>
   `;
+  const container = mostrarDetalhe(html);
   renderEditItems();
   renderEditExtras();
 
-  content.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
-    const statusEl = content.querySelector('#ed-ai-status');
-    const btn = content.querySelector('#ed-ai-assist');
+  container.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
+    const statusEl = container.querySelector('#ed-ai-status');
+    const btn = container.querySelector('#ed-ai-assist');
     btn.disabled = true;
     statusEl.textContent = 'A gerar sugestão...';
     try{
@@ -566,7 +627,7 @@ function openConfirmedDetail(id){
         descricao: p.descricao, observacoes_cliente: p.observacoes_cliente,
         tipo_servico: p.tipo_servico, services: catalog.services
       });
-      const obsEl = content.querySelector('#ed-obs');
+      const obsEl = container.querySelector('#ed-obs');
       if(data.resumo && !obsEl.value.trim()){ obsEl.value = data.resumo; }
       else if(data.resumo){ obsEl.value = obsEl.value + '\n\n[IA] ' + data.resumo; }
 
@@ -597,8 +658,8 @@ function openConfirmedDetail(id){
     btn.disabled = false;
   });
 
-  content.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
-  content.querySelector('#ed-add-extra').addEventListener('click', ()=>{
+  container.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
+  container.querySelector('#ed-add-extra').addEventListener('click', ()=>{
     const p = pedidos.find(x=>x.id===editingPedidoId);
     const nome = prompt('Nome do custo (ex: Cimento extra, Ajudante João):');
     if(!nome || !nome.trim()) return;
@@ -610,19 +671,19 @@ function openConfirmedDetail(id){
     updateEditTotals();
     showToast('Custo adicionado');
   });
-  content.querySelector('#ed-close').addEventListener('click', ()=>{ overlay.classList.remove('open'); editingPedidoId=null; });
-  content.querySelector('#ed-delete').addEventListener('click', async ()=>{
+  container.querySelector('#ed-close').addEventListener('click', ()=>{ fecharDetalhe(); editingPedidoId=null; });
+  container.querySelector('#ed-delete').addEventListener('click', async ()=>{
     if(!confirm('Excluir este orçamento? Esta ação não pode ser desfeita.')) return;
     try{
       await apiSend('/api/pedidos/'+id, 'DELETE');
       pedidos = pedidos.filter(x=>x.id!==id);
-      overlay.classList.remove('open');
+      fecharDetalhe();
       editingPedidoId = null;
       renderAll();
       showToast('Orçamento excluído');
     }catch(e){ showToast('Erro ao excluir'); }
   });
-  content.querySelector('#ed-save').addEventListener('click', async ()=>{
+  container.querySelector('#ed-save').addEventListener('click', async ()=>{
     try{
       const p = pedidos.find(x=>x.id===editingPedidoId);
       const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
@@ -635,13 +696,12 @@ function openConfirmedDetail(id){
         extras: p.extras || []
       });
       pedidos = pedidos.map(x=>x.id===id ? updated : x);
-      overlay.classList.remove('open');
+      fecharDetalhe();
       editingPedidoId = null;
       renderAll();
       showToast('Orçamento guardado');
     }catch(e){ showToast('Erro ao guardar orçamento'); }
   });
-  overlay.classList.add('open');
 }
 
 function renderEditItems(){
