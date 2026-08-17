@@ -1310,14 +1310,20 @@ function renderStats(){
     ${servicoEntries.length ? `
       <h2 class="section">Valor por tipo de serviço</h2>
       ${servicoEntries.map(([name,val])=>{
-        const pct = maxServico>0 ? Math.min(100, Math.round((val/maxServico*100)/5)*5) : 0;
+        const pct = maxServico>0 ? Math.min(100, (val/maxServico)*100) : 0;
         return `<div class="bar">
           <div class="bar-top"><span>${escapeHtml(name)}</span><span class="money">${fmt(val)}</span></div>
-          <div class="bar-track"><div class="bar-fill w-${pct}"></div></div>
+          <div class="bar-track"><div class="bar-fill" data-pct="${pct.toFixed(2)}"></div></div>
         </div>`;
       }).join('')}
     ` : ''}
   `;
+
+  // A largura de cada barra e um dado, nao uma decisao de estilo: fica numa
+  // custom property posta pelo JS, em vez de uma classe por cada percentagem.
+  el.querySelectorAll('.bar-fill[data-pct]').forEach(b => {
+    b.style.setProperty('--pct', b.dataset.pct + '%');
+  });
 }
 
 loadAll();
