@@ -1,0 +1,142 @@
+/* telemóvel: cabeçalho com separadores, coluna única */
+.app { display: block; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: var(--s-3); padding: var(--s-3) var(--s-4); }
+.brand img { width: 32px; height: 32px; border-radius: var(--r-sm); }
+.brand-name { font-weight: 600; }
+.brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
+.brand-actions { margin-left: auto; }
+
+.nav { display: flex; overflow-x: auto; padding: 0 var(--s-2); }
+.nav-item {
+  flex: 1 0 auto;
+  min-width: 84px;
+  min-height: 44px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--dim);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.nav-item.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+.nav-badge {
+  display: inline-block;
+  min-width: 18px;
+  padding: 0 5px;
+  margin-left: var(--s-1);
+  background: var(--pend);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.nav-badge[hidden] { display: none; }
+
+.sidebar { display: none; }
+
+.content { padding: var(--s-4); }
+.content-head { margin-bottom: var(--s-4); }
+.content-head p { font-size: 13px; color: var(--dim); }
+
+.tab { display: none; }
+.tab.active { display: block; }
+
+.list { display: grid; grid-template-columns: 1fr; gap: var(--s-3); }
+
+.detail-panel { display: none; }
+
+/* linha de título + ação, usada nos cabeçalhos estáticos das tabs */
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--s-4); }
+.section-head h2 { margin: 0; }
+.section-head + .section-head { margin-top: var(--s-5); }
+
+/* barra flutuante com a ação principal (+ Novo orçamento) */
+.fab-row {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  padding: var(--s-3) var(--s-4) calc(var(--s-3) + env(safe-area-inset-bottom));
+  background: linear-gradient(0deg, var(--bg) 55%, transparent);
+}
+.fab-row .btn { max-width: 640px; margin: 0 auto; }
+#tab-confirmados { padding-bottom: 88px; }
+
+/* tablet: cartões em duas colunas */
+@media (min-width: 768px) {
+  .content { padding: var(--s-5); max-width: 900px; margin: 0 auto; }
+  .list { grid-template-columns: 1fr 1fr; }
+}
+
+/* computador: menu lateral fixo em vez de separadores */
+@media (min-width: 1024px) {
+  .app { display: flex; min-height: 100vh; align-items: stretch; }
+  .topbar { display: none; }
+
+  .sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: var(--sidebar-w);
+    flex-shrink: 0;
+    padding: var(--s-4) var(--s-3);
+    background: var(--panel);
+    border-right: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+  }
+  .sidebar .brand { padding: 0 var(--s-2) var(--s-4); }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    min-height: 44px;
+    padding: 10px 12px;
+    border: none;
+    border-radius: var(--r);
+    background: none;
+    color: var(--dim);
+    font: inherit;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+  }
+  .sidebar-item:hover { background: var(--accent-soft); }
+  .sidebar-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .sidebar-foot { margin-top: auto; }
+
+  .content { flex: 1; min-width: 0; max-width: none; margin: 0; padding: var(--s-5); }
+}
+
+/* ecrã largo: detalhe em painel lateral em vez de modal */
+@media (min-width: 1280px) {
+  .detail-panel {
+    display: block;
+    width: var(--detail-w);
+    flex-shrink: 0;
+    background: var(--panel);
+    border-left: 1px solid var(--border);
+    padding: var(--s-5);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .content .list { grid-template-columns: 1fr; }
+  .detail-panel .empty { padding-top: var(--s-6); }
+}

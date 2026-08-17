@@ -53,3 +53,23 @@ test('as paginas carregam shared.js e nao redefinem as funcoes', () => {
     assert.ok(!/const fmt =/.test(html), `${p} ainda define fmt`);
   }
 });
+
+test('admin.css define os quatro pontos de rutura da spec', () => {
+  const css = ler('public/css/admin.css');
+  for (const bp of ['768px', '1024px', '1280px']) {
+    assert.match(css, new RegExp(`min-width:\\s*${bp}`), `falta o ponto de rutura ${bp}`);
+  }
+});
+
+test('o admin deixa de bloquear o zoom', () => {
+  const html = ler('public/admin.html');
+  assert.ok(!/user-scalable\s*=\s*no/.test(html), 'viewport ainda bloqueia zoom');
+  assert.ok(!/maximum-scale/.test(html), 'viewport ainda limita a escala');
+});
+
+test('admin.html carrega as folhas partilhadas e nao tem bloco <style>', () => {
+  const html = ler('public/admin.html');
+  assert.match(html, /href="\/css\/tokens\.css"/);
+  assert.match(html, /href="\/css\/admin\.css"/);
+  assert.ok(!/<style[\s>]/.test(html), 'encontrado bloco <style>');
+});

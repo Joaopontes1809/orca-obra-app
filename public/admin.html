@@ -2,9 +2,9 @@
 <html lang="pt-PT">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Orça Obra</title>
-<meta name="theme-color" content="#FAFAF8">
+<meta name="theme-color" content="#F8FAFC">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -14,253 +14,84 @@
 <link rel="manifest" href="/manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
-<style>
-  :root{
-    --bg:#FAFAF8; --bg-2:#F2F1EC;
-    --panel:rgba(255,255,255,0.86); --panel-solid:#FFFFFF; --panel-2:#F4F3EF;
-    --border:#E7E4DD; --border-strong:#D6D2C8;
-    --text:#17181A; --text-dim:#68686A; --text-faint:#9C9A94;
-    --accent:#12312B; --accent-soft:rgba(18,49,43,0.07);
-    --indigo:#8A6A3E; --amber:#AD8A52; --danger:#B23B2E; --success:#2F6F4E;
-    --radius:14px; --blur:24px;
-    --radius-sm:10px;
-    --shadow-card:0 1px 2px rgba(23,24,26,0.04), 0 8px 28px rgba(23,24,26,0.06);
-    --shadow-glow:0 0 0 1px rgba(18,49,43,0.18);
-    --shadow-pop:0 -16px 48px rgba(23,24,26,0.12);
-    --shadow-elevated:0 4px 16px rgba(23,24,26,0.08), 0 1px 3px rgba(23,24,26,0.05);
-  }
-  ::selection{background:var(--accent-soft);color:var(--accent);}
-  /* Compact text utilities */
-  .text-strong{font-weight:600;}
-  .text-dim{color:var(--text-dim);}
-  .text-faint{color:var(--text-faint);}
-  *{box-sizing:border-box;}
-  html,body{margin:0;padding:0;overscroll-behavior:none;}
-  body{
-    background:
-      radial-gradient(circle at 15% 0%, rgba(18,49,43,0.035), transparent 42%),
-      radial-gradient(circle at 90% 20%, rgba(173,138,82,0.05), transparent 45%),
-      var(--bg);
-    background-attachment:fixed; color:var(--text); font-family:'Inter',sans-serif;
-    -webkit-tap-highlight-color:transparent; min-height:100vh;
-  }
-  .num{font-family:'IBM Plex Mono',monospace;font-weight:600;letter-spacing:0.1px;}
-  ::selection{background:var(--accent-soft);color:var(--accent);}
-
-  header{
-    position:relative; padding:22px 16px 0 16px;
-    background:var(--panel); backdrop-filter:blur(var(--blur)); -webkit-backdrop-filter:blur(var(--blur));
-    border-bottom:1px solid var(--border);
-  }
-  header::after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--border-strong);}
-  .brand{display:flex;align-items:center;gap:12px;margin-bottom:18px;position:relative;z-index:1;}
-  .brand-mark{width:38px;height:38px;flex-shrink:0;border-radius:9px;}
-  .brand-text{flex:1;min-width:0;}
-  .brand-name-row{display:flex;align-items:baseline;gap:8px;}
-  #company-name{font-family:'Newsreader',serif;font-style:italic;font-weight:600;font-size:20px;margin:0;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-  .edit-name{background:none;border:none;color:var(--text-faint);cursor:pointer;padding:2px;flex-shrink:0;display:flex;align-items:center;}
-  .edit-name svg{width:13px;height:13px;}
-  .brand-text p{margin:2px 0 0 0;font-size:10.5px;color:var(--text-faint);letter-spacing:0.8px;text-transform:uppercase;}
-  .share-btn{
-    display:flex;align-items:center;gap:6px;background:var(--accent);border:1px solid var(--accent);
-    color:#F4F1E9;border-radius:8px;padding:9px 12px;font-size:12px;font-weight:500;cursor:pointer;flex-shrink:0;
-  }
-  .share-btn svg{width:14px;height:14px;}
-
-  nav{display:flex;gap:0;position:relative;z-index:1;overflow-x:auto;}
-  nav button{
-    flex:1;min-width:72px;background:transparent;border:none;color:var(--text-faint);
-    font-family:'Inter',sans-serif;font-weight:500;font-size:12px;letter-spacing:0.3px;
-    padding:12px 8px 13px 8px;cursor:pointer;border-bottom:2px solid transparent;
-    transition:color .15s ease,border-color .15s ease;white-space:nowrap;position:relative;
-    text-transform:uppercase;
-  }
-  nav button.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600;}
-  nav button:hover:not(.active){color:var(--text);}
-  .nav-badge{
-    display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 4px;
-    background:var(--amber);color:#FFFFFF;font-size:10px;font-weight:700;border-radius:20px;margin-left:4px;
-  }
-
-  main{padding:20px 16px 104px 16px;max-width:760px;margin:0 auto;}
-  .tab{display:none;}
-  .tab.active{display:block;}
-
-  .card{background:var(--panel-solid);border-radius:var(--radius);padding:18px;margin-bottom:12px;border:1px solid var(--border);box-shadow:var(--shadow-card);}
-  .empty{text-align:center;padding:52px 20px;}
-  .empty-icon{width:54px;height:54px;opacity:1;margin-bottom:10px;border-radius:12px;}
-  .empty p{margin:4px 0;font-size:13.5px;color:var(--text-dim);}
-  .empty .lead{font-family:'Newsreader',serif;font-style:italic;color:var(--text);font-size:19px;font-weight:600;margin-top:8px;}
-
-  .proj-card{cursor:pointer;transition:border-color .15s ease, box-shadow .15s ease;position:relative;}
-  .proj-card:active{border-color:var(--border-strong);box-shadow:var(--shadow-glow);}
-  .proj-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
-  .proj-name{font-family:'Newsreader',serif;font-size:17px;font-weight:600;margin:0 0 3px 0;}
-  .proj-meta{font-size:12.5px;color:var(--text-dim);margin:0;}
-  .proj-total{font-size:17px;color:var(--accent);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-weight:600;}
-  .proj-tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
-  .tag{font-size:10.5px;padding:4px 10px;border-radius:20px;background:var(--bg-2);color:var(--indigo);font-weight:500;border:1px solid var(--border);letter-spacing:0.2px;text-transform:uppercase;}
-  .tag-pending{background:rgba(173,138,82,0.10);color:var(--amber);border-color:rgba(173,138,82,0.3);}
-  .proj-desc{font-size:13px;color:var(--text-dim);margin-top:9px;line-height:1.5;}
-
-  button{font-family:inherit;}
-  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 18px;border-radius:9px;
-    border:1px solid var(--border-strong);background:var(--panel-solid);color:var(--text);font-size:14px;font-weight:500;
-    cursor:pointer;min-height:47px;transition:opacity .15s ease;}
-  .btn:active{opacity:0.75;}
-  .btn-primary{background:var(--accent);border-color:var(--accent);color:#F4F1E9;font-weight:600;}
-  .btn-primary:hover{background:#0D2620;}
-  .btn-amber{background:var(--amber);border-color:var(--amber);color:#fff;}
-  .btn-danger{background:transparent;border-color:rgba(178,59,46,0.4);color:var(--danger);}
-  .btn-ghost{background:transparent;border-color:var(--border-strong);color:var(--text-dim);}
-  .btn-block{width:100%;}
-  .btn-sm{padding:9px 12px;min-height:38px;font-size:13px;}
-  .fab-row{position:fixed;bottom:0;left:0;right:0;padding:14px 16px calc(14px + env(safe-area-inset-bottom));
-    background:linear-gradient(0deg,var(--bg) 60%,transparent);}
-  .fab-row .btn{max-width:760px;margin:0 auto;}
-
-  label{display:block;font-size:11.5px;color:var(--text-faint);margin:0 0 6px 2px;font-weight:500;letter-spacing:0.5px;text-transform:uppercase;}
-  input,select,textarea{width:100%;background:var(--panel-2);border:1px solid var(--border);color:var(--text);
-    padding:12px 12px;border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;}
-  textarea{resize:vertical;min-height:70px;}
-  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
-  input::placeholder,textarea::placeholder{color:var(--text-faint);}
-  select option{background:#fff;color:var(--text);}
-  .field{margin-bottom:14px;}
-  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-  .row3{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:10px;}
-  h2.section{font-family:'Newsreader',serif;font-style:italic;font-size:16px;font-weight:600;color:var(--text);
-    margin:28px 0 13px 0;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
-  h2.section::before{content:'';width:5px;height:5px;background:var(--amber);border-radius:50%;flex-shrink:0;}
-  h2.section:first-child{margin-top:0;}
-
-  .item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 13px;background:var(--panel-2);
-    border:1px solid var(--border);border-radius:10px;margin-bottom:8px;gap:10px;}
-  .item-row .desc{font-size:14px;font-weight:500;}
-  .item-row .sub{font-size:12px;color:var(--text-dim);margin-top:2px;}
-  .item-row .val{font-size:14.5px;color:var(--accent);white-space:nowrap;font-family:'IBM Plex Mono',monospace;font-weight:600;}
-  .item-row .del{background:none;border:none;color:var(--text-faint);font-size:20px;cursor:pointer;padding:4px 6px;}
-
-  .total-box{background:var(--panel-solid);border:1px solid var(--border-strong);border-radius:var(--radius);padding:18px;margin-top:16px;position:relative;box-shadow:var(--shadow-card);}
-  .total-box::before{content:'';position:absolute;top:0;left:18px;right:18px;height:2px;background:var(--amber);}
-  .total-box .line{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dim);padding:4px 0;}
-  .total-box .final{display:flex;justify-content:space-between;align-items:baseline;margin-top:8px;padding-top:11px;border-top:1px dashed var(--border);}
-  .total-box .final .lbl{font-family:'Newsreader',serif;font-style:italic;font-size:14.5px;font-weight:600;}
-  .total-box .final .amt{font-size:27px;color:var(--accent);font-family:'IBM Plex Mono',monospace;font-weight:600;}
-
-  .cat-row{display:flex;align-items:center;gap:10px;padding:11px 13px;background:var(--panel-2);border:1px solid var(--border);border-radius:10px;margin-bottom:8px;}
-  .cat-row .info{flex:1;min-width:0;}
-  .cat-row .info .name{font-size:14px;font-weight:500;}
-  .cat-row .info .meta{font-size:12px;color:var(--text-dim);}
-  .cat-row input{width:90px;text-align:right;padding:8px;font-size:14px;}
-  .cat-row .del{background:none;border:none;color:var(--text-faint);font-size:19px;cursor:pointer;padding:2px 4px;display:flex;align-items:center;}
-  .cat-row [data-mat-search]{color:var(--accent);}
-
-  .overlay{position:fixed;inset:0;background:rgba(23,24,26,0.35);display:none;align-items:flex-end;justify-content:center;z-index:50;}
-  .overlay.open{display:flex;}
-  .modal{background:var(--panel-solid);width:100%;max-width:760px;border-radius:20px 20px 0 0;
-    padding:24px 20px calc(20px + env(safe-area-inset-bottom));max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-pop);border-top:1px solid var(--border-strong);}
-  .modal h3{font-family:'Newsreader',serif;font-style:italic;font-size:20px;font-weight:600;margin:0 0 4px 0;}
-  .modal .sub-h{font-size:13px;color:var(--text-dim);margin:0 0 16px 0;}
-  .modal-actions{display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;}
-  .modal-actions .btn{flex:1;min-width:120px;}
-
-  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;}
-  .info-grid .box{background:var(--panel-2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;}
-  .info-grid .box .k{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px;}
-  .info-grid .box .v{font-size:14px;font-weight:500;}
-  .info-grid .box.full{grid-column:1/-1;}
-
-  .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--text);color:#FAFAF8;
-    padding:11px 20px;border-radius:9px;font-size:13.5px;font-weight:500;z-index:60;opacity:0;pointer-events:none;
-    transition:opacity .25s ease;box-shadow:var(--shadow-pop);}
-  .toast.show{opacity:1;}
-
-  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;}
-  .stat-box{background:var(--panel-solid);border:1px solid var(--border);border-radius:var(--radius);padding:17px;}
-  .stat-box .num-big{font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:600;color:var(--accent);}
-  .stat-box .lbl{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.5px;margin-top:5px;}
-  .bar-row{margin-bottom:13px;}
-  .bar-row .bar-top{display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px;}
-  .bar-row .bar-top .n{color:var(--text-dim);}
-  .bar-track{height:6px;border-radius:6px;background:var(--bg-2);overflow:hidden;}
-  .bar-fill{height:100%;background:var(--accent);border-radius:6px;}
-
-  .stat-box .breakdown{display:flex;flex-direction:column;gap:7px;}
-  .stat-box .bd-row{display:flex;justify-content:space-between;font-size:13.5px;color:var(--text-dim);}
-  .stat-box .bd-row .num{color:var(--text);font-family:'IBM Plex Mono',monospace;font-weight:600;}
-
-  /* agenda */
-  .agenda-day{margin-bottom:20px;}
-  .agenda-date{font-family:'Newsreader',serif;font-style:italic;font-size:15px;font-weight:600;color:var(--text);margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);}
-  .agenda-events{display:flex;flex-direction:column;gap:9px;}
-  .agenda-card{display:flex;align-items:flex-start;gap:11px;padding:13px 14px;background:var(--panel-2);border:1px solid var(--border);border-radius:var(--radius-sm);transition:border-color .15s, transform .08s;}
-  .agenda-card:active{transform:scale(0.99);}
-  .agenda-card:hover{border-color:var(--border-strong);}
-  .agenda-card .chip{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
-  .agenda-body{flex:1;min-width:0;}
-  .agenda-title{font-size:14px;font-weight:600;color:var(--text);}
-  .agenda-sub{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
-
-  .loading{text-align:center;padding:60px 20px;color:var(--text-faint);font-size:13.5px;}
-
-  @media(min-width:640px){ main{padding-top:24px;} }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/admin.css">
 </head>
 <body>
 
-<header>
-  <div class="brand">
-    <img class="brand-mark" src="/icons/icon-192.png" alt="">
-    <div class="brand-text">
-      <div class="brand-name-row">
-        <p id="company-name">Sua Construtora</p>
-        <button class="edit-name" id="btn-edit-name" aria-label="Editar nome da empresa">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        </button>
+<div class="app">
+  <div class="topbar">
+    <div class="brand">
+      <img src="/icons/icon-192.png" alt="">
+      <div>
+        <div class="brand-name-row">
+          <p class="brand-name" id="company-name">Sua Construtora</p>
+          <button class="edit-name" id="btn-edit-name" aria-label="Editar nome da empresa">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+          </button>
+        </div>
+        <p class="brand-sub">Painel de orçamentos</p>
       </div>
-      <p>Painel de orçamentos</p>
+      <div class="brand-actions">
+        <button class="btn btn-sm" id="btn-share-link">Link p/ cliente</button>
+      </div>
     </div>
-    <button class="share-btn" id="btn-share-link">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4M15.4 6.5l-6.8 4"/></svg>
-      Link p/ cliente
-    </button>
+    <nav class="nav">
+      <button class="nav-item active" data-tab="pendentes">Pendentes<span class="nav-badge" id="badge-pendentes" hidden>0</span></button>
+      <button class="nav-item" data-tab="confirmados">Confirmados</button>
+      <button class="nav-item" data-tab="agenda">Agenda</button>
+      <button class="nav-item" data-tab="catalogo">Catálogo</button>
+      <button class="nav-item" data-tab="stats">Estatística</button>
+    </nav>
   </div>
-  <nav>
-    <button class="tab-btn active" data-tab="pendentes">Pendentes<span class="nav-badge" id="badge-pendentes" style="display:none;">0</span></button>
-    <button class="tab-btn" data-tab="confirmados">Confirmados</button>
-    <button class="tab-btn" data-tab="agenda">Agenda</button>
-    <button class="tab-btn" data-tab="catalogo">Catálogo</button>
-    <button class="tab-btn" data-tab="stats">Estatística</button>
-  </nav>
-</header>
 
-<main>
-  <section id="tab-pendentes" class="tab active"></section>
-  <section id="tab-confirmados" class="tab"></section>
-
-  <section id="tab-agenda" class="tab">
-    <h2 class="section">Calendário</h2>
-    <div id="agenda-view"></div>
-  </section>
-
-  <section id="tab-catalogo" class="tab">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h2 class="section" style="margin:0;">Tipos de serviço</h2>
-      <button class="btn btn-primary btn-sm" id="btn-add-service">+ Novo serviço</button>
+  <aside class="sidebar">
+    <div class="brand">
+      <img src="/icons/icon-192.png" alt="">
+      <div>
+        <p class="brand-name" id="company-name-side">Sua Construtora</p>
+        <p class="brand-sub">Painel de orçamentos</p>
+      </div>
     </div>
-    <div id="cat-services"></div>
+    <button class="sidebar-item active" data-tab="pendentes">Pendentes<span class="nav-badge" id="badge-pendentes-side" hidden>0</span></button>
+    <button class="sidebar-item" data-tab="confirmados">Confirmados</button>
+    <button class="sidebar-item" data-tab="agenda">Agenda</button>
+    <button class="sidebar-item" data-tab="catalogo">Catálogo</button>
+    <button class="sidebar-item" data-tab="stats">Estatística</button>
+    <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button></div>
+  </aside>
 
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:24px;margin-bottom:16px;">
-      <h2 class="section" style="margin:0;">Materiais</h2>
-      <button class="btn btn-primary btn-sm" id="btn-add-material">+ Novo material</button>
-    </div>
-    <div id="cat-materials"></div>
-  </section>
+  <main class="content">
+    <section id="tab-pendentes" class="tab active"></section>
+    <section id="tab-confirmados" class="tab"></section>
 
-  <section id="tab-stats" class="tab"></section>
-</main>
+    <section id="tab-agenda" class="tab">
+      <h2 class="section">Calendário</h2>
+      <div id="agenda-view"></div>
+    </section>
+
+    <section id="tab-catalogo" class="tab">
+      <div class="section-head">
+        <h2 class="section">Tipos de serviço</h2>
+        <button class="btn btn-primary btn-sm" id="btn-add-service">+ Novo serviço</button>
+      </div>
+      <div id="cat-services"></div>
+
+      <div class="section-head">
+        <h2 class="section">Materiais</h2>
+        <button class="btn btn-primary btn-sm" id="btn-add-material">+ Novo material</button>
+      </div>
+      <div id="cat-materials"></div>
+    </section>
+
+    <section id="tab-stats" class="tab"></section>
+  </main>
+
+  <aside class="detail-panel" id="detail-panel"></aside>
+</div>
 
 <div class="overlay" id="item-overlay">
   <div class="modal">
@@ -404,7 +235,7 @@
 
 <div class="toast" id="toast"></div>
 
-<div class="fab-row tab active" id="fab-confirmados" style="display:none;">
+<div class="fab-row" id="fab-confirmados">
   <button class="btn btn-primary btn-block" id="btn-novo-orcamento">+ Novo orçamento</button>
 </div>
 
@@ -441,7 +272,10 @@ async function loadAll(){
   if(agR.status === 'fulfilled'){ agenda = agR.value || []; }
   else { falhas.push('agenda'); }
 
-  document.getElementById('company-name').textContent = companyName;
+  ['company-name', 'company-name-side'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = companyName;
+  });
   renderAll();
 
   if(falhas.length){ showToast('Não foi possível carregar: ' + falhas.join(', ')); }
@@ -454,13 +288,13 @@ function showToast(msg){
 }
 
 /* ---------------- tabs ---------------- */
-document.querySelectorAll('.tab-btn').forEach(btn=>{
+document.querySelectorAll('[data-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
 });
 function switchTab(name){
   activeTab = name;
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
-  document.querySelectorAll('main .tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+  document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
   document.getElementById('fab-confirmados').style.display = (name==='confirmados') ? 'block' : 'none';
   if(name === 'agenda') loadAgendaPedidos();
 }
@@ -469,23 +303,30 @@ document.getElementById('btn-edit-name').addEventListener('click', async ()=>{
   const name = prompt('Nome da empresa:', companyName);
   if(name && name.trim()){
     companyName = name.trim();
-    document.getElementById('company-name').textContent = companyName;
+    ['company-name', 'company-name-side'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.textContent = companyName;
+    });
     try{ await apiSend('/api/config/empresa', 'PUT', { nome: companyName }); showToast('Nome atualizado'); }
     catch(e){ showToast('Erro ao guardar nome'); }
   }
 });
 
-document.getElementById('btn-share-link').addEventListener('click', ()=>{
-  const link = window.location.origin + '/pedido';
-  if(navigator.share){
-    navigator.share({ title:'Pedir orçamento', url: link }).catch(()=>{});
-  } else if(navigator.clipboard){
-    navigator.clipboard.writeText(link).then(()=>showToast('Link copiado: '+link)).catch(()=>{
+['btn-share-link', 'btn-share-link-side'].forEach(id => {
+  const btn = document.getElementById(id);
+  if(!btn) return;
+  btn.addEventListener('click', ()=>{
+    const link = window.location.origin + '/pedido';
+    if(navigator.share){
+      navigator.share({ title:'Pedir orçamento', url: link }).catch(()=>{});
+    } else if(navigator.clipboard){
+      navigator.clipboard.writeText(link).then(()=>showToast('Link copiado: '+link)).catch(()=>{
+        prompt('Copie o link para enviar aos clientes:', link);
+      });
+    } else {
       prompt('Copie o link para enviar aos clientes:', link);
-    });
-  } else {
-    prompt('Copie o link para enviar aos clientes:', link);
-  }
+    }
+  });
 });
 
 /* ---------------- calc ---------------- */
@@ -520,9 +361,12 @@ function renderAll(){
 function renderPendentes(){
   const el = document.getElementById('tab-pendentes');
   const list = pedidos.filter(p=>p.status==='pendente');
-  const badge = document.getElementById('badge-pendentes');
-  if(list.length>0){ badge.style.display='inline-flex'; badge.textContent = list.length; }
-  else { badge.style.display='none'; }
+  ['badge-pendentes', 'badge-pendentes-side'].forEach(id => {
+    const badgeEl = document.getElementById(id);
+    if(!badgeEl) return;
+    badgeEl.textContent = list.length;
+    badgeEl.hidden = list.length === 0;
+  });
 
   if(list.length===0){
     el.innerHTML = `<div class="empty">
