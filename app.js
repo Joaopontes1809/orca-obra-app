@@ -1,5 +1,6 @@
 const express = require('express');
 const path = require('path');
+const auth = require('./auth');
 
 const DEFAULT_CATALOG = {
   services: [
@@ -75,6 +76,11 @@ function createApp(pool) {
   const app = express();
   app.use(express.json());
   app.use(express.static(path.join(__dirname, 'public')));
+
+  // Login e sessao. O middleware protege tudo em /api excepto o que o
+  // formulario publico do cliente precisa — ver ROTAS_PUBLICAS em auth.js.
+  auth.registarRotas(app);
+  app.use(auth.exigirSessao);
 
   /* ---------------- config ---------------- */
   app.get('/api/config', async (req, res) => {

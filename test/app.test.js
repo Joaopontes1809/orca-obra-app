@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { createApp, initDb } = require('../app');
-const { stubPool, listen } = require('./helpers/harness');
+const { stubPool, listen, fetchComSessao } = require('./helpers/harness');
+
+// Estas rotas exigem sessao; o fetch local leva sempre o cookie.
+const fetch = fetchComSessao;
 
 test('GET /api/config devolve as chaves de configuração', async () => {
   const pool = stubPool(() => ({

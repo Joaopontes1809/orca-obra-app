@@ -79,7 +79,9 @@
   background: linear-gradient(0deg, var(--bg) 55%, transparent);
 }
 .fab-row.show { display: block; }
-.fab-row .btn { max-width: 640px; margin: 0 auto; }
+/* o .btn e inline-flex, e margin:auto nao centra elementos inline — tem de
+   passar a bloco para a barra o centrar */
+.fab-row .btn { display: flex; max-width: 640px; margin: 0 auto; }
 #tab-confirmados { padding-bottom: 88px; }
 
 /* tablet: cartões em duas colunas */
@@ -204,3 +206,38 @@
 @media (min-width: 1280px) {
   .fab-row { right: var(--detail-w); }
 }
+
+/* ---------------- ecra de entrada ---------------- */
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--s-4);
+}
+.login-screen[hidden] { display: none; }
+
+.login-box {
+  width: 100%;
+  max-width: 360px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-5);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+.login-box img { width: 48px; height: 48px; border-radius: var(--r); }
+.login-box h1 { margin-top: var(--s-3); font-size: 22px; }
+.login-box .dim { font-size: 13px; margin-bottom: var(--s-5); }
+.login-box .field { text-align: left; margin-bottom: var(--s-3); }
+
+.login-erro {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: var(--s-3);
+  text-align: left;
+}
+.login-erro[hidden] { display: none; }
+
+.btn-sair { color: var(--danger); }

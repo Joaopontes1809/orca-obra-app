@@ -58,3 +58,8 @@ input::placeholder, textarea::placeholder { color: var(--dim); }
   .row-2 { grid-template-columns: 1fr 1fr; }
   .row-3 { grid-template-columns: 1.4fr 1fr 1fr; }
 }
+
+/* O atributo hidden e' do UA stylesheet e perde para qualquer regra de classe
+   — .app { display:flex } chegava a mante-lo visivel por baixo do ecra de
+   entrada. Isto garante que hidden esconde mesmo. */
+[hidden] { display: none !important; }

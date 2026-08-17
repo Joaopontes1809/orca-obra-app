@@ -36,7 +36,7 @@ const PEDIDOS = [{
 
 // Carrega a pagina com um fetch controlado. `falhar` e uma lista de caminhos
 // que devem responder 404.
-function carregar(falhar = []) {
+function carregar(falhar = [], sessao = { autenticado: true, configurado: true }) {
   return new Promise(resolve => {
     const dom = new JSDOM(HTML, {
       runScripts: 'dangerously',
@@ -47,6 +47,8 @@ function carregar(falhar = []) {
           if (falhar.some(f => String(url).startsWith(f))) {
             return { ok: false, status: 404, json: async () => ({ error: 'nao existe' }) };
           }
+          // o painel so arranca depois de confirmar a sessao
+          if (url === '/api/sessao') return { ok: true, json: async () => sessao };
           if (url === '/api/config') return { ok: true, json: async () => CONFIG };
           if (url === '/api/pedidos') return { ok: true, json: async () => PEDIDOS };
           if (url === '/api/agenda') return { ok: true, json: async () => [] };

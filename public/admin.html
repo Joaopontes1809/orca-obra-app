@@ -22,7 +22,21 @@
 </head>
 <body>
 
-<div class="app">
+<div class="login-screen" id="login-screen" hidden>
+  <div class="login-box">
+    <img src="/icons/icon-192.png" alt="">
+    <h1>Krona</h1>
+    <p class="dim">Painel de orçamentos</p>
+    <div class="field">
+      <label for="login-password">Password</label>
+      <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••">
+    </div>
+    <p class="login-erro" id="login-erro" hidden></p>
+    <button class="btn btn-primary btn-block" id="login-btn">Entrar</button>
+  </div>
+</div>
+
+<div class="app" id="app" hidden>
   <div class="topbar">
     <div class="brand">
       <img src="/icons/icon-192.png" alt="">
@@ -32,6 +46,7 @@
       </div>
       <div class="brand-actions">
         <button class="btn btn-sm" id="btn-share-link">Link p/ cliente</button>
+        <button class="btn btn-sm btn-ghost btn-sair" id="btn-sair">Sair</button>
       </div>
     </div>
     <nav class="nav">
@@ -56,7 +71,7 @@
     <button class="sidebar-item" data-tab="agenda">Agenda</button>
     <button class="sidebar-item" data-tab="catalogo">Catálogo</button>
     <button class="sidebar-item" data-tab="stats">Estatística</button>
-    <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button></div>
+    <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button><button class="btn btn-ghost btn-block btn-sair" id="btn-sair-side">Sair</button></div>
   </aside>
 
   <main class="content">
@@ -1351,7 +1366,83 @@ function renderStats(){
   });
 }
 
-loadAll();
+/* ---------------- entrada no painel ---------------- */
+const ecraLogin = document.getElementById('login-screen');
+const ecraApp = document.getElementById('app');
+const erroLogin = document.getElementById('login-erro');
+
+function mostrarLogin(mensagem){
+  ecraApp.hidden = true;
+  ecraLogin.hidden = false;
+  if(mensagem){ erroLogin.textContent = mensagem; erroLogin.hidden = false; }
+  else { erroLogin.hidden = true; }
+  document.getElementById('login-password').focus();
+}
+
+function mostrarPainel(){
+  ecraLogin.hidden = true;
+  ecraApp.hidden = false;
+}
+
+async function tentarEntrar(){
+  const campo = document.getElementById('login-password');
+  const botao = document.getElementById('login-btn');
+  const password = campo.value;
+  if(!password){ mostrarLogin('Escreva a password.'); return; }
+  botao.disabled = true;
+  try{
+    const r = await fetch('/api/login', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ password })
+    });
+    if(r.status === 401){ campo.value=''; mostrarLogin('Password errada.'); return; }
+    if(r.status === 503){ mostrarLogin('O painel ainda nao tem password configurada.'); return; }
+    if(!r.ok){ mostrarLogin('Nao foi possivel entrar. Tente outra vez.'); return; }
+    campo.value = '';
+    mostrarPainel();
+    await loadAll();
+  }catch(e){
+    mostrarLogin('Sem ligacao. Verifique a internet.');
+  }finally{
+    botao.disabled = false;
+  }
+}
+
+document.getElementById('login-btn').addEventListener('click', tentarEntrar);
+document.getElementById('login-password').addEventListener('keydown', e => {
+  if(e.key === 'Enter') tentarEntrar();
+});
+
+async function sair(){
+  try{ await fetch('/api/logout', { method:'POST' }); }catch(e){}
+  pedidos = []; agenda = [];
+  mostrarLogin();
+}
+['btn-sair','btn-sair-side'].forEach(id => {
+  const b = document.getElementById(id);
+  if(b) b.addEventListener('click', sair);
+});
+
+// Se a sessao expirar a meio, qualquer resposta 401 devolve ao ecra de entrada.
+const _fetchOriginal = window.fetch.bind(window);
+window.fetch = async (url, opts) => {
+  const r = await _fetchOriginal(url, opts);
+  if(r.status === 401 && String(url).startsWith('/api/') && !String(url).includes('/api/login')){
+    mostrarLogin('A sessao expirou. Entre outra vez.');
+  }
+  return r;
+};
+
+(async function arrancar(){
+  try{
+    const r = await _fetchOriginal('/api/sessao');
+    const s = await r.json();
+    if(s.autenticado){ mostrarPainel(); await loadAll(); }
+    else { mostrarLogin(s.configurado ? '' : 'O painel ainda nao tem password configurada.'); }
+  }catch(e){
+    mostrarLogin('Sem ligacao ao servidor.');
+  }
+})();
 </script>
 </body>
 </html>
