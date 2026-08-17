@@ -67,7 +67,7 @@ async function initDb(pool) {
   }
   const emp = await pool.query("SELECT 1 FROM config WHERE key = 'empresa'");
   if (emp.rows.length === 0) {
-    await pool.query("INSERT INTO config (key, value) VALUES ('empresa', $1)", [{ nome: 'Sua Construtora' }]);
+    await pool.query("INSERT INTO config (key, value) VALUES ('empresa', $1)", [{ nome: 'Krona' }]);
   }
 }
 

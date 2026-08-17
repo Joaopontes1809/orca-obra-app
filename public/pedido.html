@@ -19,7 +19,7 @@
   <div class="top">
     <img src="/icons/icon-192.png" alt="">
     <div>
-      <h1 id="empresa-nome">Sua Construtora</h1>
+      <h1 id="empresa-nome">Krona</h1>
       <p>Pedido de orçamento</p>
     </div>
   </div>
@@ -124,7 +124,7 @@ async function load(){
     const r = await fetch('/api/config');
     const cfg = await r.json();
     catalog = cfg.catalogo || { services: [], materials: [] };
-    document.getElementById('empresa-nome').textContent = (cfg.empresa && cfg.empresa.nome) || 'Sua Construtora';
+    document.getElementById('empresa-nome').textContent = (cfg.empresa && cfg.empresa.nome) || 'Krona';
   }catch(e){
     catalog = { services: [{ id:'s-outro', name:'Outro', unit:'un', laborPercent:50 }], materials: [] };
   }

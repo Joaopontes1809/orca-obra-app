@@ -12,7 +12,7 @@ const pool = new Pool({
 
 initDb(pool)
   .then(() => {
-    createApp(pool).listen(port, () => console.log('Orça Obra a correr na porta ' + port));
+    createApp(pool).listen(port, () => console.log('Krona a correr na porta ' + port));
   })
   .catch(e => {
     console.error('Erro ao iniciar base de dados', e);

@@ -193,3 +193,14 @@
 @media (min-width: 1024px) {
   .stats { grid-template-columns: repeat(4, 1fr); }
 }
+
+/* A barra flutuante e fixa ao ecra, por isso tem de recuar para nao ficar por
+   baixo do menu lateral nem do painel de detalhe — so assim o botao fica
+   centrado na coluna de conteudo, e nao na janela toda. */
+@media (min-width: 1024px) {
+  .fab-row { left: var(--sidebar-w); }
+}
+
+@media (min-width: 1280px) {
+  .fab-row { right: var(--detail-w); }
+}
