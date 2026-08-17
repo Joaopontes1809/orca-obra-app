@@ -112,6 +112,98 @@ test('os renders de agenda, catalogo e estatisticas nao geram estilo inline', as
   dom.window.close();
 });
 
+function largo(window) {
+  window.matchMedia = q => ({ matches: true, media: q, addListener(){}, removeListener(){} });
+}
+
+test('abrir e fechar um novo orcamento sem guardar nao contacta o servidor', async () => {
+  const dom = await carregar();
+  const { window } = dom;
+  const document = window.document;
+  largo(window);
+
+  let manualPosts = 0;
+  const fetchOriginal = window.fetch;
+  window.fetch = async (url, opts) => {
+    if (String(url) === '/api/pedidos/manual') manualPosts++;
+    return fetchOriginal(url, opts);
+  };
+
+  document.getElementById('btn-novo-orcamento').click();
+  assert.ok(document.getElementById('ed-nome'), 'esperava o formulario do novo orcamento aberto');
+  assert.strictEqual(manualPosts, 0, 'abrir o painel do novo orcamento nao deve contactar o servidor');
+
+  document.getElementById('ed-close').click();
+  assert.strictEqual(manualPosts, 0, 'fechar sem guardar nao deve contactar o servidor');
+  assert.ok(!document.getElementById('ed-nome'), 'o painel deve fechar');
+
+  dom.window.close();
+});
+
+test('excluir um novo orcamento por guardar nao contacta o servidor', async () => {
+  const dom = await carregar();
+  const { window } = dom;
+  const document = window.document;
+  largo(window);
+
+  let deleteCalls = 0;
+  const fetchOriginal = window.fetch;
+  window.fetch = async (url, opts) => {
+    if (opts && opts.method === 'DELETE') deleteCalls++;
+    return fetchOriginal(url, opts);
+  };
+
+  document.getElementById('btn-novo-orcamento').click();
+  document.getElementById('ed-delete').click();
+  assert.strictEqual(deleteCalls, 0, 'excluir um orcamento nao guardado nao deve contactar o servidor');
+  assert.ok(!document.getElementById('ed-nome'), 'o painel deve fechar');
+
+  dom.window.close();
+});
+
+test('guardar um novo orcamento faz POST uma vez; a segunda gravacao faz PATCH', async () => {
+  const dom = await carregar();
+  const { window } = dom;
+  const document = window.document;
+  largo(window);
+
+  const calls = [];
+  window.fetch = async (url, opts) => {
+    const method = (opts && opts.method) || 'GET';
+    calls.push({ url: String(url), method });
+    if (String(url) === '/api/pedidos/manual' && method === 'POST') {
+      return { ok: true, json: async () => ({ id: 42, nome_cliente: 'Rui Nunes', nome_orcamento: 'Telhado', itens: [], extras: [], status: 'confirmado' }) };
+    }
+    if (String(url) === '/api/pedidos/42' && method === 'PATCH') {
+      return { ok: true, json: async () => ({ id: 42, nome_cliente: 'Rui Nunes', nome_orcamento: 'Telhado', itens: [], extras: [], status: 'confirmado' }) };
+    }
+    return { ok: false, status: 404, json: async () => ({}) };
+  };
+
+  document.getElementById('btn-novo-orcamento').click();
+  document.getElementById('ed-cliente').value = 'Rui Nunes';
+  document.getElementById('ed-nome').value = 'Telhado';
+  document.getElementById('ed-save').click();
+  await new Promise(r => setTimeout(r, 30));
+
+  let postsManual = calls.filter(c => c.url === '/api/pedidos/manual' && c.method === 'POST');
+  assert.strictEqual(postsManual.length, 1, 'a primeira gravacao deve fazer POST uma unica vez');
+
+  const cartao = document.querySelector('#tab-confirmados .card[data-id="42"]');
+  assert.ok(cartao, 'o orcamento guardado deve aparecer na lista com o id devolvido pelo servidor');
+  cartao.click();
+  document.getElementById('ed-save').click();
+  await new Promise(r => setTimeout(r, 30));
+
+  postsManual = calls.filter(c => c.url === '/api/pedidos/manual' && c.method === 'POST');
+  const patches = calls.filter(c => c.url === '/api/pedidos/42' && c.method === 'PATCH');
+  assert.strictEqual(postsManual.length, 1, 'a segunda gravacao nao deve repetir o POST');
+  assert.strictEqual(patches.length, 1, 'a segunda gravacao deve fazer PATCH ao orcamento ja criado');
+  assert.strictEqual(document.querySelectorAll('#tab-confirmados .card').length, 1, 'nao deve sobrar nenhum orcamento duplicado');
+
+  dom.window.close();
+});
+
 test('abaixo de 1280 o detalhe vai para o modal', async () => {
   const dom = await carregar();
   const { window } = dom;

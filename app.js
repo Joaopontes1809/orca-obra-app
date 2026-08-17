@@ -137,11 +137,11 @@ function createApp(pool) {
   // criado internamente pela equipa (já nasce confirmado)
   app.post('/api/pedidos/manual', async (req, res) => {
     try {
-      const { nome_cliente, telefone, morada, nome_orcamento, itens } = req.body;
+      const { nome_cliente, telefone, morada, nome_orcamento, itens, extras } = req.body;
       const r = await pool.query(
-        `INSERT INTO pedidos (nome_cliente, telefone, morada, nome_orcamento, itens, status, confirmado_em)
-         VALUES ($1,$2,$3,$4,$5,'confirmado', now()) RETURNING *`,
-        [nome_cliente || '', telefone || null, morada || '', nome_orcamento || '', JSON.stringify(itens || [])]
+        `INSERT INTO pedidos (nome_cliente, telefone, morada, nome_orcamento, itens, extras, status, confirmado_em)
+         VALUES ($1,$2,$3,$4,$5,$6,'confirmado', now()) RETURNING *`,
+        [nome_cliente || '', telefone || null, morada || '', nome_orcamento || '', JSON.stringify(itens || []), JSON.stringify(extras || [])]
       );
       res.json(r.rows[0]);
     } catch (e) {

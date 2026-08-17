@@ -653,12 +653,14 @@ function renderConfirmados(){
 }
 
 function openConfirmedDetail(id){
+  // id pode ser null: e o caso do orcamento novo, ainda so em memoria,
+  // que fica guardado em `pedidos` com id null ate ser gravado.
   const p = pedidos.find(p=>p.id===id);
   if(!p) return;
-  editingPedidoId = id;
+  editingPedidoId = p.id;
   draftItems = JSON.parse(JSON.stringify(p.itens||[]));
   itemModalTargetIsDraft = true;
-  detalheAbertoId = id;
+  detalheAbertoId = p.id;
   detalheAbertoTipo = 'confirmado';
   document.querySelectorAll('.card-selected').forEach(c => c.classList.remove('card-selected'));
   const cartao = document.querySelector(`.card[data-id="${id}"]`);
@@ -750,16 +752,28 @@ function openConfirmedDetail(id){
 
   container.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
   container.querySelector('#ed-add-extra').addEventListener('click', ()=>openCustoModal());
-  container.querySelector('#ed-close').addEventListener('click', ()=>{ fecharDetalhe(); editingPedidoId=null; });
+  container.querySelector('#ed-close').addEventListener('click', ()=>{
+    fecharDetalhe();
+    if(p.id == null){ pedidos = pedidos.filter(x=>x!==p); }
+    editingPedidoId = null;
+  });
   container.querySelector('#ed-delete').addEventListener('click', async ()=>{
+    // orcamento ainda nao gravado: nao ha nada no servidor para apagar,
+    // basta descartar o rascunho e fechar.
+    if(p.id == null){
+      pedidos = pedidos.filter(x=>x!==p);
+      fecharDetalhe();
+      editingPedidoId = null;
+      return;
+    }
     if(!await confirmar({
       titulo: 'Excluir este orçamento?',
       texto: 'O orçamento e os seus itens são apagados e não podem ser recuperados.',
       acao: 'Excluir'
     })) return;
     try{
-      await apiSend('/api/pedidos/'+id, 'DELETE');
-      pedidos = pedidos.filter(x=>x.id!==id);
+      await apiSend('/api/pedidos/'+p.id, 'DELETE');
+      pedidos = pedidos.filter(x=>x.id!==p.id);
       fecharDetalhe();
       editingPedidoId = null;
       renderAll();
@@ -769,7 +783,7 @@ function openConfirmedDetail(id){
   container.querySelector('#ed-save').addEventListener('click', async ()=>{
     try{
       const p = pedidos.find(x=>x.id===editingPedidoId);
-      const updated = await apiSend('/api/pedidos/'+id, 'PATCH', {
+      const payload = {
         nome_orcamento: document.getElementById('ed-nome').value.trim(),
         nome_cliente: document.getElementById('ed-cliente').value.trim(),
         telefone: document.getElementById('ed-telefone').value.trim(),
@@ -777,8 +791,15 @@ function openConfirmedDetail(id){
         observacoes_internas: document.getElementById('ed-obs').value.trim(),
         itens: draftItems,
         extras: p.extras || []
-      });
-      pedidos = pedidos.map(x=>x.id===id ? updated : x);
+      };
+      let updated;
+      if(p.id == null){
+        updated = await apiSend('/api/pedidos/manual', 'POST', payload);
+        pedidos = pedidos.map(x=>x===p ? updated : x);
+      } else {
+        updated = await apiSend('/api/pedidos/'+p.id, 'PATCH', payload);
+        pedidos = pedidos.map(x=>x.id===p.id ? updated : x);
+      }
       fecharDetalhe();
       editingPedidoId = null;
       renderAll();
@@ -891,15 +912,19 @@ function renderEditExtras(){
 }
 
 /* ---------------- novo orçamento manual ---------------- */
-document.getElementById('btn-novo-orcamento').addEventListener('click', async ()=>{
-  try{
-    const created = await apiSend('/api/pedidos/manual', 'POST', {
-      nome_cliente:'', telefone:'', morada:'', nome_orcamento:'Novo orçamento', itens:[]
-    });
-    pedidos.unshift(created);
-    renderConfirmados();
-    openConfirmedDetail(created.id);
-  }catch(e){ showToast('Erro ao criar orçamento'); }
+// O orcamento nasce so em memoria (id null) para nao deixar um registo vazio
+// na base de dados caso o painel seja fechado sem nada preenchido. So vai
+// para o servidor quando o utilizador carrega em Guardar.
+document.getElementById('btn-novo-orcamento').addEventListener('click', ()=>{
+  // descarta qualquer rascunho anterior nao gravado, para nunca haver dois
+  // pedidos com id null em simultaneo
+  pedidos = pedidos.filter(p=>p.id != null);
+  const draft = {
+    id: null, nome_cliente:'', telefone:'', morada:'',
+    nome_orcamento:'Novo orçamento', itens:[], extras:[], status:'confirmado'
+  };
+  pedidos.unshift(draft);
+  openConfirmedDetail(null);
 });
 
 /* ---------------- item modal (compartilhado) ---------------- */

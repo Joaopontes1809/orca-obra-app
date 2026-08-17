@@ -57,6 +57,48 @@ test('PATCH /api/pedidos/:id grava os custos extras', async () => {
   }
 });
 
+test('POST /api/pedidos/manual aceita um orcamento ja preenchido', async () => {
+  const pool = stubPool(() => ({ rows: [{ id: 9 }] }));
+  const srv = await listen(createApp(pool));
+  try {
+    const r = await fetch(`${srv.url}/api/pedidos/manual`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome_cliente: 'Rui Nunes', telefone: '910222333', morada: 'Praceta Verde 3',
+        nome_orcamento: 'Telhado — Rui Nunes', itens: [], extras: []
+      })
+    });
+    assert.strictEqual(r.status, 200);
+    const insert = pool.calls.find(c => c.text.includes('INSERT INTO pedidos'));
+    assert.strictEqual(insert.values[0], 'Rui Nunes');
+  } finally {
+    await srv.close();
+  }
+});
+
+test('POST /api/pedidos/manual grava os extras, tal como os itens', async () => {
+  const extras = [{ id: 'e1', nome: 'Ajudante — 1 dia', tipo: 'mao_de_obra', valor: 80 }];
+  const pool = stubPool(() => ({ rows: [{ id: 10, extras }] }));
+  const srv = await listen(createApp(pool));
+  try {
+    const r = await fetch(`${srv.url}/api/pedidos/manual`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nome_cliente: 'Rui Nunes', telefone: '', morada: '',
+        nome_orcamento: 'Novo orçamento', itens: [], extras
+      })
+    });
+    assert.strictEqual(r.status, 200);
+    const insert = pool.calls.find(c => c.text.includes('INSERT INTO pedidos'));
+    assert.match(insert.text, /extras/);
+    assert.strictEqual(insert.values.includes(JSON.stringify(extras)), true, 'os extras tem de ir serializados como JSON, tal como os itens');
+  } finally {
+    await srv.close();
+  }
+});
+
 test('initDb cria a coluna extras de forma idempotente', async () => {
   const pool = stubPool(() => ({ rows: [{ ok: 1 }] }));
   await initDb(pool);
