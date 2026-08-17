@@ -4,7 +4,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { JSDOM } = require('jsdom');
 
-const HTML = fs.readFileSync(path.join(__dirname, '..', 'public', 'admin.html'), 'utf8');
+const PUBLICO = path.join(__dirname, '..', 'public');
+
+// O jsdom nao vai buscar <script src="..."> a rede, e nao ha servidor a correr
+// nos testes. Substituimos cada src local pelo conteudo do ficheiro, que e o
+// que o browser acaba por executar de qualquer forma.
+function inlineScripts(html) {
+  return html.replace(/<script src="\/([^"]+)"><\/script>/g, (original, ficheiro) => {
+    const caminho = path.join(PUBLICO, ficheiro);
+    if (!fs.existsSync(caminho)) return original;
+    return '<script>' + fs.readFileSync(caminho, 'utf8') + '</script>';
+  });
+}
+
+const HTML = inlineScripts(fs.readFileSync(path.join(PUBLICO, 'admin.html'), 'utf8'));
 
 const CONFIG = {
   catalogo: {
