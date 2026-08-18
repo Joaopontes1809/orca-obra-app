@@ -7,6 +7,13 @@ function fmtDate(s) {
   return s ? new Date(s).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 }
 
+// Converte para numero. Campos numericos vindos do formulario publico
+// chegam como o cliente os enviou — foi por aqui que entrou um XSS.
+function num(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

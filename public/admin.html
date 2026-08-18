@@ -573,7 +573,7 @@ function openPendingDetail(id){
     return `<div class="item-row">
       <div>
         <div class="desc">${escapeHtml(it.desc)}</div>
-        <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')}${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · a definir'}</div>
+        <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')}${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · a definir'}</div>
       </div>
       <div class="val num">${it.unitPrice ? fmt(c.total) : '—'}</div>
     </div>`;
@@ -864,7 +864,7 @@ function renderEditItems(){
       return `<div class="item-row">
         <div>
           <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
-          <div class="sub">${it.quantity} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${it.laborPercent}%</div>
+          <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${num(it.laborPercent)}%</div>
         </div>
         <div class="row-inline">
           <div class="val num">${fmt(c.total)}</div>

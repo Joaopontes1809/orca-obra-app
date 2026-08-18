@@ -72,6 +72,37 @@ async function initDb(pool) {
   }
 }
 
+
+// O corpo de POST /api/pedidos vem de um formulario publico, sem sessao. O que
+// la vier e guardado como JSONB e mais tarde desenhado no painel, por isso os
+// campos tem de ser reduzidos ao tipo e tamanho esperados antes de entrarem.
+const LIMITE_TEXTO = 300;
+const LIMITE_ITENS = 60;
+
+function texto(v, limite) {
+  if (v === null || v === undefined) return null;
+  return String(v).slice(0, limite || LIMITE_TEXTO);
+}
+
+function numero(v) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function limparItens(itens) {
+  if (!Array.isArray(itens)) return [];
+  return itens.slice(0, LIMITE_ITENS).map(it => ({
+    id: texto(it && it.id, 40) || '',
+    serviceId: texto(it && it.serviceId, 40),
+    materialId: texto(it && it.materialId, 40),
+    desc: texto(it && it.desc, 200) || '',
+    unit: texto(it && it.unit, 20) || '',
+    quantity: numero(it && it.quantity),
+    unitPrice: numero(it && it.unitPrice),
+    laborPercent: numero(it && it.laborPercent)
+  }));
+}
+
 function createApp(pool) {
   const app = express();
   app.use(express.json());
@@ -131,7 +162,9 @@ function createApp(pool) {
       const r = await pool.query(
         `INSERT INTO pedidos (nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens, status)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pendente') RETURNING *`,
-        [nome_cliente, telefone || null, morada, tipo_servico || null, descricao || null, quantidade || null, unidade || null, observacoes_cliente || null, JSON.stringify(itens || [])]
+        [texto(nome_cliente, 120), texto(telefone, 40), texto(morada, 200), texto(tipo_servico, 200),
+         texto(descricao, 2000), quantidade == null ? null : numero(quantidade), texto(unidade, 20),
+         texto(observacoes_cliente, 2000), JSON.stringify(limparItens(itens))]
       );
       res.json(r.rows[0]);
     } catch (e) {
