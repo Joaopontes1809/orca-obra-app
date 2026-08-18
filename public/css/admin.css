@@ -354,3 +354,107 @@
   .filtros .field:nth-last-of-type(1) { grid-column: 1; }
   .filtros .btn { grid-column: 2; }
 }
+
+/* ---------------- detalhe do orçamento ---------------- */
+/* Estas classes vinham do <style> embutido que saiu na Fase 2. O markup
+   continuou a usá-las e ninguém as definiu, por isso o quadro dos totais e a
+   lista de itens apareciam como texto solto. */
+
+.section {
+  font-size: 15px;
+  font-weight: 600;
+  margin: var(--s-5) 0 var(--s-3);
+  padding-bottom: var(--s-2);
+  border-bottom: 1px solid var(--border);
+}
+.section:first-child { margin-top: 0; }
+
+.sub-h {
+  font-size: 13px;
+  color: var(--dim);
+  margin-bottom: var(--s-4);
+}
+
+.num, .val { font-variant-numeric: tabular-nums; }
+
+/* linha de item dentro do orçamento */
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s-3);
+  padding: var(--s-3);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+}
+.item-row + .item-row { margin-top: var(--s-2); }
+.item-row .desc { font-size: 14px; font-weight: 500; }
+.item-row .sub {
+  font-size: 12.5px;
+  color: var(--dim);
+  margin-top: 2px;
+  line-height: 1.4;
+}
+.item-row .val {
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.item-row .del {
+  background: none;
+  border: none;
+  color: var(--dim);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  padding: var(--s-1) var(--s-2);
+  min-height: 44px;
+}
+.item-row .del:hover { color: var(--danger); }
+
+/* quadro dos totais */
+.total-box {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  margin-top: var(--s-4);
+}
+.total-box .line {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-3);
+  font-size: 14px;
+  color: var(--dim);
+  padding: var(--s-1) 0;
+}
+.total-box .line .num { color: var(--text); }
+.total-box .final {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--s-3);
+  margin-top: var(--s-2);
+  padding-top: var(--s-3);
+  border-top: 1px solid var(--border);
+}
+.total-box .final .lbl { font-size: 15px; font-weight: 600; }
+.total-box .final .num { font-size: 20px; font-weight: 600; }
+
+/* grelhas usadas nos modais */
+.row2, .row3 { display: grid; grid-template-columns: 1fr; gap: 0 var(--s-3); }
+@media (min-width: 640px) {
+  .row2 { grid-template-columns: 1fr 1fr; }
+  .row3 { grid-template-columns: 1.2fr 1fr 1fr; }
+}
+
+/* pago e por receber, no quadro dos totais e nas estatísticas */
+.total-box .line-pago { color: var(--ok); }
+.total-box .line-pago .num { color: var(--ok); }
+.total-box .final-falta { border-top-style: dashed; }
+.total-box .final-falta .num { color: var(--pend); }
+
+.stat-pago .v { color: var(--ok); }
+.stat-falta .v { color: var(--pend); }

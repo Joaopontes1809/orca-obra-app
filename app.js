@@ -56,6 +56,7 @@ async function initDb(pool) {
   `);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS extras JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ;`);
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS pagamentos JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS agenda (
       id         SERIAL PRIMARY KEY,
@@ -134,7 +135,8 @@ function limparItens(itens) {
     laborUnitPrice: it && it.laborUnitPrice !== null && it.laborUnitPrice !== undefined && it.laborUnitPrice !== ''
       ? numero(it.laborUnitPrice)
       : null,
-    laborPercent: numero(it && it.laborPercent)
+    laborPercent: numero(it && it.laborPercent),
+    empreitada: !!(it && it.empreitada)
   }));
 }
 
@@ -241,14 +243,14 @@ function createApp(pool) {
   app.patch('/api/pedidos/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const allowed = ['nome_cliente', 'telefone', 'morada', 'tipo_servico', 'descricao', 'quantidade', 'unidade', 'status', 'nome_orcamento', 'observacoes_internas', 'itens', 'extras'];
+      const allowed = ['nome_cliente', 'telefone', 'morada', 'tipo_servico', 'descricao', 'quantidade', 'unidade', 'status', 'nome_orcamento', 'observacoes_internas', 'itens', 'extras', 'pagamentos'];
       const fields = [];
       const values = [];
       let i = 1;
       for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(req.body, key)) {
           fields.push(`${key} = $${i}`);
-          values.push(key === 'itens' || key === 'extras' ? JSON.stringify(req.body[key]) : req.body[key]);
+          values.push(key === 'itens' || key === 'extras' || key === 'pagamentos' ? JSON.stringify(req.body[key]) : req.body[key]);
           i++;
         }
       }

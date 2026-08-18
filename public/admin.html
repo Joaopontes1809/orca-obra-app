@@ -281,6 +281,33 @@
 </div>
 
 <!-- Modal Custo extra -->
+<div class="overlay" id="pagamento-overlay">
+  <div class="modal">
+    <h2>Registar pagamento</h2>
+    <p class="dim" id="pg-falta"></p>
+    <div class="row2">
+      <div class="field">
+        <label for="pg-valor">Valor recebido (€)</label>
+        <input id="pg-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label for="pg-data">Data</label>
+        <input id="pg-data" type="date">
+      </div>
+    </div>
+    <div class="field">
+      <label for="pg-nota">Nota (opcional)</label>
+      <input id="pg-nota" placeholder="Ex: sinal, transferência, primeira tranche">
+    </div>
+    <p class="error" id="pg-erro">Indique um valor maior que zero.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="pg-cancelar">Cancelar</button>
+      <button class="btn" id="pg-tudo">Recebi o resto</button>
+      <button class="btn btn-primary" id="pg-confirmar">Registar</button>
+    </div>
+  </div>
+</div>
+
 <div class="overlay" id="custo-overlay">
   <div class="modal">
     <h2>Custo extra</h2>
@@ -515,8 +542,21 @@ brandNameEls.forEach(el=>{
 
 /* ---------------- calc ---------------- */
 function calcExtras(p){
-  const extras = p.extras || [];
+  const extras = (p && p.extras) || [];
   return extras.reduce((s,e)=> s + (parseFloat(e.valor)||0), 0);
+}
+
+// Quanto o cliente ja entregou deste orcamento.
+function calcPago(p){
+  const pagamentos = (p && p.pagamentos) || [];
+  return pagamentos.reduce((s,x)=> s + (parseFloat(x.valor)||0), 0);
+}
+
+// O que falta receber. Nunca abaixo de zero: se pagaram a mais, isso e um
+// troco a devolver, nao uma divida negativa a somar nas estatisticas.
+function calcFalta(p){
+  const total = calcTotals(p && p.itens).total + calcExtras(p);
+  return Math.max(0, total - calcPago(p));
 }
 
 /* ---------------- render root ---------------- */
@@ -846,7 +886,7 @@ function renderConfirmados(){
   if(list.length===0){
     el.innerHTML = `<div class="empty">
       <h2>Nenhum orçamento confirmado</h2>
-      <p>Confirme um pedido pendente ou toque em "+ Novo orçamento" para criar um diretamente.</p>
+      <p>Confirme um pedido pendente ou carregue em "+ Novo orçamento" para criar um diretamente.</p>
     </div>`;
     return;
   }
@@ -917,19 +957,26 @@ function openConfirmedDetail(id){
     <button class="btn btn-block mt-2" id="ed-add-item">+ Adicionar item</button>
 
     <h2 class="section">Custos adicionais</h2>
-    <p class="hint">Materiais novos, ajudantes, mão de obra extra — tudo que não está nos itens acima.</p>
+    <p class="hint">Materiais novos, ajudantes, mão de obra extra — tudo o que não está nos itens acima.</p>
     <div id="ed-extras"></div>
     <button class="btn btn-block btn-highlight mt-2" id="ed-add-extra">+ Adicionar custo extra</button>
+
+    <h2 class="section">Pagamentos</h2>
+    <p class="hint">O que o cliente já entregou. O que falta receber aparece no fim.</p>
+    <div id="ed-pagamentos"></div>
+    <button class="btn btn-block mt-2" id="ed-add-pagamento">+ Registar pagamento</button>
 
     <div class="total-box">
       <div class="line"><span>Material (itens)</span><span class="num" id="ed-tot-material">${fmt(t.material)}</span></div>
       <div class="line"><span>Mão de obra (itens)</span><span class="num" id="ed-tot-mao">${fmt(t.labor)}</span></div>
       <div class="line"><span>Custos adicionais</span><span class="num" id="ed-tot-extra">${fmt(calcExtras(p))}</span></div>
       <div class="final"><span class="lbl">Total</span><span class="num amt" id="ed-tot-final">${fmt(t.total + calcExtras(p))}</span></div>
+      <div class="line line-pago"><span>Já pago</span><span class="num" id="ed-tot-pago">${fmt(calcPago(p))}</span></div>
+      <div class="final final-falta"><span class="lbl">Falta receber</span><span class="num amt" id="ed-tot-falta">${fmt(t.total + calcExtras(p) - calcPago(p))}</span></div>
     </div>
 
     <div class="modal-actions">
-      <button class="btn btn-danger" id="ed-delete">Excluir</button>
+      <button class="btn btn-danger" id="ed-delete">Eliminar</button>
       <button class="btn btn-ghost" id="ed-close">Fechar</button>
       ${p.id != null ? (estaConcluida(p)
         ? `<button class="btn btn-ghost" id="ed-reabrir">Voltar a confirmados</button>`
@@ -940,6 +987,7 @@ function openConfirmedDetail(id){
   const container = mostrarDetalhe(html);
   renderEditItems();
   renderEditExtras();
+  renderEditPagamentos();
 
   container.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
     const statusEl = container.querySelector('#ed-ai-status');
@@ -986,6 +1034,7 @@ function openConfirmedDetail(id){
 
   container.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
   container.querySelector('#ed-add-extra').addEventListener('click', ()=>openCustoModal());
+  container.querySelector('#ed-add-pagamento').addEventListener('click', ()=>abrirPagamentoModal());
   container.querySelector('#ed-close').addEventListener('click', ()=>{
     fecharDetalhe();
     if(p.id == null){ pedidos = pedidos.filter(x=>x!==p); }
@@ -1029,7 +1078,7 @@ function openConfirmedDetail(id){
       return;
     }
     if(!await confirmar({
-      titulo: 'Excluir este orçamento?',
+      titulo: 'Eliminar este orçamento?',
       texto: 'O orçamento e os seus itens são apagados e não podem ser recuperados.',
       acao: 'Excluir'
     })) return;
@@ -1039,8 +1088,8 @@ function openConfirmedDetail(id){
       fecharDetalhe();
       editingPedidoId = null;
       renderAll();
-      showToast('Orçamento excluído');
-    }catch(e){ showToast('Erro ao excluir'); }
+      showToast('Orçamento eliminado');
+    }catch(e){ showToast('Não foi possível eliminar'); }
   });
   container.querySelector('#ed-save').addEventListener('click', async ()=>{
     try{
@@ -1052,7 +1101,8 @@ function openConfirmedDetail(id){
         morada: document.getElementById('ed-morada').value.trim(),
         observacoes_internas: document.getElementById('ed-obs').value.trim(),
         itens: draftItems,
-        extras: p.extras || []
+        extras: p.extras || [],
+        pagamentos: p.pagamentos || []
       };
       let updated;
       if(p.id == null){
@@ -1093,15 +1143,62 @@ document.getElementById('cx-confirmar').addEventListener('click', ()=>{
   p.extras.push({ id: uid(), nome, tipo, valor });
   custoOverlay.classList.remove('open');
   renderEditExtras();
+  renderEditPagamentos();
   updateEditTotals();
   showToast('Custo adicionado');
+});
+
+/* ---------------- modal de pagamento ---------------- */
+const pagamentoOverlay = document.getElementById('pagamento-overlay');
+
+function abrirPagamentoModal(){
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p) return;
+  // o que falta conta com os itens que estão a ser editados, não com os gravados
+  const totalAtual = calcTotals(draftItems).total + calcExtras(p);
+  const falta = Math.max(0, totalAtual - calcPago(p));
+
+  document.getElementById('pg-falta').textContent = falta > 0
+    ? `Falta receber ${fmt(falta)} de ${fmt(totalAtual)}.`
+    : 'Este orçamento já está totalmente pago.';
+  document.getElementById('pg-valor').value = '';
+  document.getElementById('pg-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('pg-nota').value = '';
+  document.getElementById('pg-erro').hidden = true;
+  document.getElementById('pg-tudo').hidden = falta <= 0;
+  document.getElementById('pg-tudo').dataset.valor = falta.toFixed(2);
+  pagamentoOverlay.classList.add('open');
+}
+
+document.getElementById('pg-cancelar').addEventListener('click', ()=>pagamentoOverlay.classList.remove('open'));
+document.getElementById('pg-tudo').addEventListener('click', ()=>{
+  document.getElementById('pg-valor').value = document.getElementById('pg-tudo').dataset.valor;
+});
+document.getElementById('pg-confirmar').addEventListener('click', ()=>{
+  const valor = parseFloat(document.getElementById('pg-valor').value);
+  if(isNaN(valor) || valor <= 0){
+    document.getElementById('pg-erro').hidden = false;
+    return;
+  }
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p.pagamentos) p.pagamentos = [];
+  p.pagamentos.push({
+    id: uid(),
+    valor,
+    data: document.getElementById('pg-data').value || new Date().toISOString().slice(0,10),
+    nota: document.getElementById('pg-nota').value.trim()
+  });
+  pagamentoOverlay.classList.remove('open');
+  renderEditPagamentos();
+  updateEditTotals();
+  showToast('Pagamento registado');
 });
 
 function renderEditItems(){
   const el = document.getElementById('ed-items');
   if(!el) return;
   if(draftItems.length===0){
-    el.innerHTML = `<p class="hint">Nenhum item adicionado ainda.</p>`;
+    el.innerHTML = `<p class="hint">Ainda não há itens.</p>`;
   } else {
     el.innerHTML = draftItems.map((it, idx)=>{
       const c = calcItem(it);
@@ -1137,6 +1234,9 @@ function updateEditTotals(){
   document.getElementById('ed-tot-mao').textContent = fmt(t.labor);
   document.getElementById('ed-tot-extra').textContent = fmt(extraTotal);
   document.getElementById('ed-tot-final').textContent = fmt(t.total + extraTotal);
+  const pago = calcPago(p);
+  document.getElementById('ed-tot-pago').textContent = fmt(pago);
+  document.getElementById('ed-tot-falta').textContent = fmt(Math.max(0, t.total + extraTotal - pago));
 }
 
 /* ---------------- custos extras (materiais novos, ajudantes...) ---------------- */
@@ -1148,7 +1248,7 @@ function renderEditExtras(){
   const el = document.getElementById('ed-extras');
   if(!el) return;
   if(extras.length===0){
-    el.innerHTML = `<p class="hint">Nenhum custo extra adicionado ainda.</p>`;
+    el.innerHTML = `<p class="hint">Ainda não há custos extra.</p>`;
   } else {
     el.innerHTML = extras.map((e, idx)=>`
       <div class="item-row">
@@ -1171,6 +1271,41 @@ function renderEditExtras(){
       });
     });
   }
+}
+
+/* ---------------- pagamentos ---------------- */
+function renderEditPagamentos(){
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p) return;
+  const pagamentos = p.pagamentos || [];
+  const el = document.getElementById('ed-pagamentos');
+  if(!el) return;
+
+  if(pagamentos.length===0){
+    el.innerHTML = `<p class="hint">Ainda não há pagamentos registados.</p>`;
+    return;
+  }
+
+  el.innerHTML = pagamentos.map((x, idx)=>`
+    <div class="item-row">
+      <div>
+        <div class="desc">${fmt(parseFloat(x.valor)||0)}</div>
+        <div class="sub">${fmtDate(x.data)}${x.nota ? ' · '+escapeHtml(x.nota) : ''}</div>
+      </div>
+      <div class="row-inline">
+        <button class="del" data-pag-idx="${idx}">×</button>
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-pag-idx]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const p2 = pedidos.find(x=>x.id===editingPedidoId);
+      p2.pagamentos.splice(parseInt(b.dataset.pagIdx), 1);
+      renderEditPagamentos();
+      updateEditTotals();
+    });
+  });
 }
 
 /* ---------------- novo orçamento manual ---------------- */
@@ -1267,8 +1402,8 @@ document.getElementById('im-confirm').addEventListener('click', ()=>{
   const qty = fechado ? 1 : parseFloat(document.getElementById('im-qty').value);
 
   if(fechado && !desc){ showToast('Escreva a descrição da empreitada'); return; }
-  if(!fechado && (!qty || qty<=0)){ showToast('Informe a quantidade'); return; }
-  if(isNaN(price) || price<0){ showToast(fechado ? 'Informe o valor do material' : 'Informe o preço unitário'); return; }
+  if(!fechado && (!qty || qty<=0)){ showToast('Indique a quantidade'); return; }
+  if(isNaN(price) || price<0){ showToast(fechado ? 'Indique o valor do material' : 'Indique o preço unitário'); return; }
 
   draftItems.push({
     id: uid(), serviceId: imService.value,
@@ -1420,7 +1555,7 @@ document.getElementById('svc-confirm').addEventListener('click', async ()=>{
   const unit = document.getElementById('svc-unit').value.trim() || 'm²';
   const labor = parseFloat(document.getElementById('svc-labor').value) || 0;
   const precoFechado = document.getElementById('svc-fechado').checked;
-  if(!name){ showToast('Informe o nome'); return; }
+  if(!name){ showToast('Indique o nome'); return; }
   if(editingServiceId){
     const s = catalog.services.find(x=>x.id===editingServiceId);
     s.name = name; s.unit = unit; s.laborPercent = labor; s.precoFechado = precoFechado;
@@ -1442,7 +1577,7 @@ document.getElementById('mat-confirm').addEventListener('click', async ()=>{
   const unit = document.getElementById('mat-unit').value.trim() || 'm²';
   const price = parseFloat(document.getElementById('mat-price').value) || 0;
   const laborPrice = parseFloat(document.getElementById('mat-labor').value) || 0;
-  if(!name){ showToast('Informe o nome'); return; }
+  if(!name){ showToast('Indique o nome'); return; }
   if(editingMaterialId){
     const m = catalog.materials.find(x=>x.id===editingMaterialId);
     m.name = name; m.serviceId = serviceId; m.unit = unit; m.price = price; m.laborPrice = laborPrice;
@@ -1573,8 +1708,8 @@ document.getElementById('agenda-confirm').addEventListener('click', async ()=>{
   const tipo = document.getElementById('agenda-type').value;
   const pedidoId = document.getElementById('agenda-pedido').value || null;
   const nota = document.getElementById('agenda-note').value.trim();
-  if(!titulo){ showToast('Informe o título'); return; }
-  if(!data){ showToast('Informe a data'); return; }
+  if(!titulo){ showToast('Indique o título'); return; }
+  if(!data){ showToast('Indique a data'); return; }
 
   try{
     if(editingAgendaId){
@@ -1638,6 +1773,14 @@ function renderStats(){
   });
   const extrasPorTipoEntries = Object.entries(extrasPorTipo).sort((a,b)=>b[1]-a[1]);
 
+  // dinheiro: o que já entrou, o que falta, e quanto disso é de obras feitas
+  let totalPago = 0, totalFalta = 0, faturadoObrasFeitas = 0;
+  confirmados.forEach(p=>{
+    totalPago += calcPago(p);
+    totalFalta += calcFalta(p);
+    if(estaConcluida(p)) faturadoObrasFeitas += calcTotals(p.itens).total + calcExtras(p);
+  });
+
   if(total===0){
     el.innerHTML = `<div class="empty">
       <h2>Ainda sem dados</h2>
@@ -1653,6 +1796,9 @@ function renderStats(){
       <div class="stat"><div class="v">${pendentesCount}</div><div class="k">Pendentes</div></div>
       <div class="stat"><div class="v">${taxa}%</div><div class="k">Taxa de confirmação</div></div>
       <div class="stat stat-wide"><div class="v money">${fmt(valorTotal)}</div><div class="k">Valor total confirmado</div></div>
+      <div class="stat stat-pago"><div class="v money">${fmt(totalPago)}</div><div class="k">Já pago</div></div>
+      <div class="stat stat-falta"><div class="v money">${fmt(totalFalta)}</div><div class="k">Falta receber</div></div>
+      <div class="stat stat-wide"><div class="v money">${fmt(faturadoObrasFeitas)}</div><div class="k">Valor das obras já feitas</div></div>
       <div class="stat"><div class="v money">${fmt(totalExtras)}</div><div class="k">Gastos em custos adicionais</div></div>
       <div class="stat"><div class="v">${orcamentosComExtras}</div><div class="k">Orçamentos com custos extra</div></div>
       <div class="stat stat-wide">

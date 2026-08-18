@@ -57,11 +57,11 @@
       <label>Tipo de trabalho</label>
       <select id="f-servico"></select>
     </div>
-    <div class="field">
+    <div class="field" id="campo-material">
       <label>Material</label>
       <select id="f-material"></select>
     </div>
-    <div class="field">
+    <div class="field" id="campo-pesquisa">
       <label>Não encontrou o material? Escreva e pesquise preços reais</label>
       <div class="search-row">
         <input id="f-search-text" placeholder="Ex: porcelanato cinza 60x60">
@@ -70,7 +70,12 @@
       <div id="f-search-results"></div>
       <div id="f-search-selected" class="hidden"></div>
     </div>
-    <div class="row row-2">
+    <div class="field" id="campo-empreitada" hidden>
+      <label for="f-empreitada">O que pretende que seja feito?</label>
+      <textarea id="f-empreitada" placeholder="Ex: remodelar a casa de banho por completo — tirar a banheira e pôr base de duche, azulejo novo, e trocar as loiças"></textarea>
+      <p class="nota-empreitada">Este trabalho é orçamentado por inteiro, depois da visita — não precisa de indicar medidas nem materiais.</p>
+    </div>
+    <div class="row row-2" id="campo-quantidade-cliente">
       <div class="field">
         <label id="f-qty-label">Quantidade (m²)</label>
         <input id="f-qty" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0">
@@ -80,6 +85,7 @@
         <button type="button" class="btn btn-block" id="btn-add-item">+ Adicionar</button>
       </div>
     </div>
+    <button type="button" class="btn btn-block" id="btn-add-empreitada" hidden>+ Adicionar à lista</button>
 
     <div id="f-items"></div>
 
@@ -133,15 +139,29 @@ async function load(){
   }catch(e){
     catalog = { services: [{ id:'s-outro', name:'Outro', unit:'un', laborPercent:50 }], materials: [] };
   }
-  // Serviços a preço fechado (empreitada) não se medem nem se orçamentam
-  // sozinhos — só a equipa os acrescenta, com a descrição e os valores.
   const sel = document.getElementById('f-servico');
   sel.innerHTML = catalog.services
-    .filter(s => !s.precoFechado)
     .map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   populateMaterial();
 }
+// Numa empreitada não há material nem medição: o cliente só descreve o que
+// quer feito, e os valores são orçamentados depois, na visita.
+function servicoEhFechado(){
+  const s = catalog.services.find(s=>s.id===document.getElementById('f-servico').value);
+  return !!(s && s.precoFechado);
+}
+
+function ajustarFormaDoFormulario(){
+  const fechado = servicoEhFechado();
+  document.getElementById('campo-material').hidden = fechado;
+  document.getElementById('campo-pesquisa').hidden = fechado;
+  document.getElementById('campo-quantidade-cliente').hidden = fechado;
+  document.getElementById('campo-empreitada').hidden = !fechado;
+  document.getElementById('btn-add-empreitada').hidden = !fechado;
+}
+
 function populateMaterial(){
+  ajustarFormaDoFormulario();
   const sid = document.getElementById('f-servico').value;
   const s = catalog.services.find(s=>s.id===sid);
   const mats = catalog.materials.filter(m=>m.serviceId===sid);
@@ -259,6 +279,37 @@ function showSelectedMaterial(){
   });
 }
 
+// A empreitada entra na lista sem valores: é a descrição que interessa, e o
+// preço é orçamentado na visita. Fica com unitPrice 0, por isso não mexe na
+// estimativa — o cliente vê "a orçamentar na visita" em vez de um número.
+document.getElementById('btn-add-empreitada').addEventListener('click', ()=>{
+  const s = catalog.services.find(s=>s.id===document.getElementById('f-servico').value);
+  const texto = document.getElementById('f-empreitada').value.trim();
+  const errEl = document.getElementById('form-error');
+
+  if(!texto){
+    errEl.textContent = 'Descreva o que pretende que seja feito.';
+    errEl.classList.add('show');
+    return;
+  }
+  errEl.classList.remove('show');
+
+  items.push({
+    id: uid(),
+    serviceId: s ? s.id : null,
+    materialId: null,
+    desc: texto,
+    quantity: 1,
+    unit: '',
+    unitPrice: 0,
+    laborUnitPrice: 0,
+    laborPercent: 0,
+    empreitada: true
+  });
+  document.getElementById('f-empreitada').value = '';
+  renderItems();
+});
+
 document.getElementById('btn-add-item').addEventListener('click', ()=>{
   const sid = document.getElementById('f-servico').value;
   const s = catalog.services.find(s=>s.id===sid);
@@ -301,12 +352,14 @@ function renderItems(){
       <div class="item-info">
         <div class="item-desc">${escapeHtml(it.desc)}</div>
         <div class="item-sub">
-          ${hasQty ? `${num(it.quantity)} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
-          ${(it.unitPrice && hasQty) ? ` · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}` : (it.unitPrice ? '' : ' · preço a definir na visita')}
+          ${it.empreitada
+            ? 'Empreitada · orçamentada na visita'
+            : `${hasQty ? `${num(it.quantity)} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
+               ${(it.unitPrice && hasQty) ? ` · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}` : (it.unitPrice ? '' : ' · preço a definir na visita')}`}
         </div>
       </div>
       <div class="item-actions">
-        <div class="item-val money">${(it.unitPrice && hasQty) ? fmt(c.total) : '—'}</div>
+        <div class="item-val money">${it.empreitada ? '—' : ((it.unitPrice && hasQty) ? fmt(c.total) : '—')}</div>
         <button class="item-del" data-idx="${idx}">×</button>
       </div>
     </div>`;
