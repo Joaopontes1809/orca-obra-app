@@ -133,8 +133,12 @@ async function load(){
   }catch(e){
     catalog = { services: [{ id:'s-outro', name:'Outro', unit:'un', laborPercent:50 }], materials: [] };
   }
+  // Serviços a preço fechado (empreitada) não se medem nem se orçamentam
+  // sozinhos — só a equipa os acrescenta, com a descrição e os valores.
   const sel = document.getElementById('f-servico');
-  sel.innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  sel.innerHTML = catalog.services
+    .filter(s => !s.precoFechado)
+    .map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   populateMaterial();
 }
 function populateMaterial(){

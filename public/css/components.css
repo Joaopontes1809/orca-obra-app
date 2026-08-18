@@ -151,3 +151,23 @@ input[readonly]:focus, textarea[readonly]:focus {
   border-color: var(--border);
   box-shadow: none;
 }
+
+/* caixa de escolha com etiqueta ao lado */
+.escolha {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  cursor: pointer;
+  margin: 0;
+}
+.escolha input[type="checkbox"] {
+  width: auto;
+  min-height: 0;
+  margin: 0;
+  accent-color: var(--accent);
+}
+.escolha span {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}

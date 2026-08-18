@@ -113,7 +113,7 @@
       <label>Serviço</label>
       <select id="im-service"></select>
     </div>
-    <div class="field">
+    <div class="field" id="campo-material-item">
       <label>Material</label>
       <div class="field-row">
         <select id="im-material"></select>
@@ -123,20 +123,21 @@
       </div>
     </div>
     <div class="field">
-      <label>Descrição (opcional)</label>
+      <label>Descrição</label>
       <input id="im-desc" placeholder="Ex: Piso da sala">
+      <p class="campo-nota" id="im-desc-nota" hidden>Numa empreitada é esta descrição que aparece no orçamento — escreva o que o trabalho inclui.</p>
     </div>
     <div class="row3">
-      <div class="field">
+      <div class="field" id="campo-quantidade">
         <label id="im-qty-label">Quantidade (m²)</label>
         <input id="im-qty" type="number" inputmode="decimal" placeholder="0" min="0" step="0.01">
       </div>
       <div class="field">
-        <label>Preço unit. (€)</label>
+        <label id="im-preco-label">Preço unit. (€)</label>
         <input id="im-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
       </div>
       <div class="field">
-        <label>Mão de obra (€/un)</label>
+        <label id="im-labor-label">Mão de obra (€/un)</label>
         <input id="im-labor" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
       </div>
     </div>
@@ -158,13 +159,33 @@
     <div class="row2">
       <div class="field">
         <label>Unidade</label>
-        <input id="svc-unit" placeholder="m²" value="m²">
+        <input id="svc-unit" placeholder="m²" value="m²" list="unidades-sugeridas">
+        <datalist id="unidades-sugeridas">
+          <option value="m²">metro quadrado — pavimentos, pintura, paredes</option>
+          <option value="m">metro linear — rodapés, tubagem, calhas</option>
+          <option value="m³">metro cúbico — betão, areia, terra</option>
+          <option value="un">unidade — portas, sanitas, janelas</option>
+          <option value="ponto">ponto — elétrico ou de canalização</option>
+          <option value="vão">vão — janelas e portas por abertura</option>
+          <option value="h">hora — trabalho ao tempo</option>
+          <option value="dia">dia — jornada</option>
+          <option value="kg">quilo — material a peso</option>
+          <option value="L">litro — tintas, impermeabilizantes</option>
+        </datalist>
+        <p class="campo-nota">Escreva a que quiser, ou escolha da lista.</p>
       </div>
       <div class="field">
         <label>Mão de obra padrão (%)</label>
         <input id="svc-labor" type="number" inputmode="decimal" placeholder="50" min="0" step="1" value="50">
         <p class="campo-nota">Só entra em conta quando o cliente não escolhe um material do catálogo — nesses casos a mão de obra é esta percentagem do valor do material.</p>
       </div>
+    </div>
+    <div class="field">
+      <label class="escolha">
+        <input type="checkbox" id="svc-fechado">
+        <span>Preço fechado (empreitada)</span>
+      </label>
+      <p class="campo-nota">Trabalho orçamentado por inteiro, sem medição. Não aparece ao cliente no formulário — só tu o podes acrescentar, escrevendo a descrição e os valores de material e mão de obra.</p>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="svc-cancel">Cancelar</button>
@@ -1088,7 +1109,7 @@ function renderEditItems(){
       return `<div class="item-row">
         <div>
           <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
-          <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')} · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}</div>
+          <div class="sub">${it.unit ? num(it.quantity)+' '+escapeHtml(it.unit)+' · ' : 'Empreitada · '}material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}</div>
         </div>
         <div class="row-inline">
           <div class="val num">${fmt(c.total)}</div>
@@ -1183,9 +1204,29 @@ function populateMaterialSelect(){
     + `<option value="__custom__">Outro material (definir preço)</option>`;
   applyMaterialDefaults();
 }
+// Numa empreitada não há medição: a quantidade é sempre 1 e os dois valores
+// são o total do trabalho, não o preço por unidade. O modal muda de forma
+// para não pedir uma quantidade que não existe.
+function servicoEscolhidoEhFechado(){
+  const s = catalog.services.find(s=>s.id===imService.value);
+  return !!(s && s.precoFechado);
+}
+
 function applyMaterialDefaults(){
   const s = catalog.services.find(s=>s.id===imService.value);
   const mat = catalog.materials.find(m=>m.id===imMaterial.value);
+  const fechado = servicoEscolhidoEhFechado();
+
+  document.getElementById('campo-quantidade').hidden = fechado;
+  document.getElementById('campo-material-item').hidden = fechado;
+  document.getElementById('im-desc-nota').hidden = !fechado;
+  document.getElementById('im-preco-label').textContent = fechado ? 'Material (€)' : 'Preço unit. (€)';
+  document.getElementById('im-labor-label').textContent = fechado ? 'Mão de obra (€)' : 'Mão de obra (€/un)';
+
+  if(fechado){
+    document.getElementById('im-qty').value = 1;
+    return;
+  }
   document.getElementById('im-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
   document.getElementById('im-labor').value = mat ? num(mat.laborPrice) : 0;
   document.getElementById('im-price').value = mat ? num(mat.price) : '';
@@ -1216,17 +1257,24 @@ document.getElementById('im-search-price').addEventListener('click', ()=>{
 });
 
 document.getElementById('im-confirm').addEventListener('click', ()=>{
-  const qty = parseFloat(document.getElementById('im-qty').value);
+  const s = catalog.services.find(s=>s.id===imService.value);
+  const fechado = !!(s && s.precoFechado);
+  const desc = document.getElementById('im-desc').value.trim();
   const price = parseFloat(document.getElementById('im-price').value);
   const labor = parseFloat(document.getElementById('im-labor').value);
-  if(!qty || qty<=0){ showToast('Informe a quantidade'); return; }
-  if(isNaN(price) || price<0){ showToast('Informe o preço unitário'); return; }
-  const s = catalog.services.find(s=>s.id===imService.value);
+
+  // numa empreitada a quantidade é sempre 1 — o que se orçamenta é o trabalho
+  const qty = fechado ? 1 : parseFloat(document.getElementById('im-qty').value);
+
+  if(fechado && !desc){ showToast('Escreva a descrição da empreitada'); return; }
+  if(!fechado && (!qty || qty<=0)){ showToast('Informe a quantidade'); return; }
+  if(isNaN(price) || price<0){ showToast(fechado ? 'Informe o valor do material' : 'Informe o preço unitário'); return; }
+
   draftItems.push({
     id: uid(), serviceId: imService.value,
-    materialId: imMaterial.value==='__custom__' ? null : imMaterial.value,
-    desc: document.getElementById('im-desc').value.trim(),
-    quantity: qty, unit: s ? s.unit : '', unitPrice: price,
+    materialId: fechado ? null : (imMaterial.value==='__custom__' ? null : imMaterial.value),
+    desc: desc || (s ? s.name : ''),
+    quantity: qty, unit: fechado ? '' : (s ? s.unit : ''), unitPrice: price,
     laborUnitPrice: isNaN(labor) ? 0 : labor,
     laborPercent: 0
   });
@@ -1348,7 +1396,8 @@ function openServiceModal(id){
   document.getElementById('service-modal-title').textContent = s ? 'Editar serviço' : 'Novo serviço';
   document.getElementById('svc-name').value = s ? s.name : '';
   document.getElementById('svc-unit').value = s ? s.unit : 'm²';
-  document.getElementById('svc-labor').value = s ? s.laborPercent : 50;
+  document.getElementById('svc-labor').value = s ? num(s.laborPercent) : 50;
+  document.getElementById('svc-fechado').checked = s ? !!s.precoFechado : false;
   serviceOverlay.classList.add('open');
 }
 function openMaterialModal(id){
@@ -1370,12 +1419,13 @@ document.getElementById('svc-confirm').addEventListener('click', async ()=>{
   const name = document.getElementById('svc-name').value.trim();
   const unit = document.getElementById('svc-unit').value.trim() || 'm²';
   const labor = parseFloat(document.getElementById('svc-labor').value) || 0;
+  const precoFechado = document.getElementById('svc-fechado').checked;
   if(!name){ showToast('Informe o nome'); return; }
   if(editingServiceId){
     const s = catalog.services.find(x=>x.id===editingServiceId);
-    s.name = name; s.unit = unit; s.laborPercent = labor;
+    s.name = name; s.unit = unit; s.laborPercent = labor; s.precoFechado = precoFechado;
   } else {
-    catalog.services.push({ id:'s-'+uid(), name, unit, laborPercent:labor });
+    catalog.services.push({ id:'s-'+uid(), name, unit, laborPercent:labor, precoFechado });
   }
   await saveCatalog(); renderCatalogView(); serviceOverlay.classList.remove('open');
   showToast('Serviço guardado');
