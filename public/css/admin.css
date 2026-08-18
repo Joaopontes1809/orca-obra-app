@@ -12,7 +12,7 @@
 .brand img { width: 32px; height: 32px; border-radius: var(--r-sm); }
 .brand-name { font-weight: 600; }
 .brand-sub { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; }
-.brand-actions { margin-left: auto; }
+.brand-actions { margin-left: auto; display: flex; gap: var(--s-3); flex-shrink: 0; }
 
 .nav { display: flex; overflow-x: auto; padding: 0 var(--s-2); }
 .nav-item {
@@ -63,7 +63,7 @@
 .detail-panel { display: none; }
 
 /* linha de título + ação, usada nos cabeçalhos estáticos das tabs */
-.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--s-4); }
+.section-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); margin-bottom: var(--s-4); }
 .section-head h2 { margin: 0; }
 .section-head + .section-head { margin-top: var(--s-5); }
 
@@ -92,6 +92,10 @@
 
 /* computador: menu lateral fixo em vez de separadores */
 @media (min-width: 1024px) {
+  /* entre 1024 e 1279 cabem as tres colunas, mas so com as laterais mais
+     estreitas — a partir de 1280 voltam a folgar */
+  :root { --sidebar-w: 180px; --detail-w: 320px; }
+
   .app { display: flex; min-height: 100vh; align-items: stretch; }
   .topbar { display: none; }
 
@@ -126,13 +130,13 @@
   }
   .sidebar-item:hover { background: var(--accent-soft); }
   .sidebar-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
-  .sidebar-foot { margin-top: auto; }
+  .sidebar-foot { margin-top: auto; display: flex; flex-direction: column; gap: var(--s-3); padding-top: var(--s-4); }
 
   .content { flex: 1; min-width: 0; max-width: none; margin: 0; padding: var(--s-5); }
 }
 
-/* ecrã largo: detalhe em painel lateral em vez de modal */
-@media (min-width: 1280px) {
+/* tablet em paisagem e computador: detalhe em painel lateral, nao em modal */
+@media (min-width: 1024px) {
   .detail-panel {
     display: block;
     width: var(--detail-w);
@@ -203,8 +207,12 @@
   .fab-row { left: var(--sidebar-w); }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: 1024px) {
   .fab-row { right: var(--detail-w); }
+}
+
+@media (min-width: 1280px) {
+  :root { --sidebar-w: 220px; --detail-w: 380px; }
 }
 
 /* ---------------- ecra de entrada ---------------- */

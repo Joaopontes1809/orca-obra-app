@@ -104,7 +104,7 @@
   padding: var(--s-5) var(--s-4) calc(var(--s-4) + env(safe-area-inset-bottom));
   box-shadow: var(--shadow-pop);
 }
-.modal-actions { display: flex; gap: var(--s-2); margin-top: var(--s-4); flex-wrap: wrap; }
+.modal-actions { display: flex; gap: var(--s-3); margin-top: var(--s-5); flex-wrap: wrap; }
 .modal-actions .btn { flex: 1; min-width: 120px; }
 
 @media (min-width: 768px) {

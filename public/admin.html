@@ -310,7 +310,9 @@ let editingServiceId = null;
 let editingMaterialId = null;
 let editingAgendaId = null;
 
-const ECRA_LARGO = '(min-width: 1280px)';
+// Tem de bater certo com o ponto de rutura do .detail-panel no admin.css:
+// e' esta media query que decide se o detalhe vai para o painel ou o modal.
+const ECRA_LARGO = '(min-width: 1024px)';
 
 // Qual pedido esta aberto no detalhe, e como o voltar a desenhar quando a
 // largura muda de lado do ponto de rutura.
