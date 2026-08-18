@@ -271,3 +271,86 @@
   color: var(--dim);
   margin-top: var(--s-1);
 }
+
+/* ---------------- ficha do pedido ---------------- */
+/* Os dados do cliente eram um paragrafo corrido; passam a pares rotulo/valor
+   para se lerem de relance. */
+.ficha {
+  margin: var(--s-4) 0;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  overflow: hidden;
+}
+.ficha-linha {
+  display: flex;
+  gap: var(--s-3);
+  padding: 10px var(--s-3);
+  background: var(--panel);
+}
+.ficha-linha + .ficha-linha { border-top: 1px solid var(--border); }
+.ficha dt {
+  flex: 0 0 96px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--dim);
+}
+.ficha dd {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  word-break: break-word;
+}
+.ficha dd a { color: var(--accent); text-decoration: none; }
+.ficha dd a:hover { text-decoration: underline; }
+
+.bloco-texto {
+  margin-bottom: var(--s-4);
+  padding: var(--s-3);
+  background: var(--accent-soft);
+  border-radius: var(--r);
+}
+.bloco-texto h4 {
+  margin: 0 0 var(--s-1) 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.bloco-texto p {
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.stat-titulo { margin-bottom: var(--s-2); }
+
+/* ---------------- filtros das obras feitas ---------------- */
+.filtros {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: var(--s-4);
+  margin-bottom: var(--s-4);
+}
+.filtros .field:last-of-type { margin-bottom: var(--s-3); }
+
+.filtros-resumo {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--s-3);
+  font-size: 13px;
+  color: var(--dim);
+}
+.filtros-resumo .money { font-size: 16px; color: var(--text); }
+
+@media (min-width: 768px) {
+  .filtros { display: grid; grid-template-columns: 2fr 1fr; gap: 0 var(--s-3); align-items: end; }
+  .filtros .field:first-child { grid-column: 1; }
+  .filtros .row-2 { grid-column: 2; }
+  .filtros .field:nth-last-of-type(1) { grid-column: 1; }
+  .filtros .btn { grid-column: 2; }
+}

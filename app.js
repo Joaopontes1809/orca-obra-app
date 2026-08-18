@@ -55,6 +55,7 @@ async function initDb(pool) {
     );
   `);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS extras JSONB NOT NULL DEFAULT '[]';`);
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ;`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS agenda (
       id         SERIAL PRIMARY KEY,
@@ -253,6 +254,12 @@ function createApp(pool) {
       }
       if (req.body.status === 'confirmado') {
         fields.push('confirmado_em = now()');
+        // voltar de concluída a confirmada limpa a data de conclusão, senão a
+        // obra continuava a contar como feita
+        fields.push('concluido_em = NULL');
+      }
+      if (req.body.status === 'concluido') {
+        fields.push('concluido_em = now()');
       }
       if (fields.length === 0) return res.json({ ok: true });
       values.push(id);

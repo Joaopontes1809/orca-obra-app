@@ -54,6 +54,7 @@
       <button class="nav-item" data-tab="confirmados">Confirmados</button>
       <button class="nav-item" data-tab="agenda">Agenda</button>
       <button class="nav-item" data-tab="catalogo">Catálogo</button>
+      <button class="nav-item" data-tab="obras">Obras feitas</button>
       <button class="nav-item" data-tab="stats">Estatística</button>
     </nav>
   </div>
@@ -70,6 +71,7 @@
     <button class="sidebar-item" data-tab="confirmados">Confirmados</button>
     <button class="sidebar-item" data-tab="agenda">Agenda</button>
     <button class="sidebar-item" data-tab="catalogo">Catálogo</button>
+    <button class="sidebar-item" data-tab="obras">Obras feitas</button>
     <button class="sidebar-item" data-tab="stats">Estatística</button>
     <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button><button class="btn btn-ghost btn-block btn-sair" id="btn-sair-side">Sair</button></div>
   </aside>
@@ -97,6 +99,7 @@
       <div id="cat-materials"></div>
     </section>
 
+    <section id="tab-obras" class="tab"></section>
     <section id="tab-stats" class="tab"></section>
   </main>
 
@@ -496,9 +499,39 @@ function calcExtras(p){
 }
 
 /* ---------------- render root ---------------- */
+/* ---------------- obras concluídas ---------------- */
+
+// Uma obra conta como feita de duas maneiras: porque a marcaste, ou porque a
+// data que lhe agendaste já passou. A segunda é só uma leitura da agenda — não
+// grava nada, para uma obra adiada poder voltar a confirmados sem estragos.
+function dataAgendadaPassada(p){
+  const eventos = (agenda||[]).filter(ev =>
+    String(ev.pedidoId) === String(p.id) && (ev.tipo === 'obra' || ev.tipo === 'entrega')
+  );
+  if(!eventos.length) return null;
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  const passadas = eventos
+    .map(ev => ev.data)
+    .filter(d => d && new Date(d + 'T00:00:00') < hoje)
+    .sort();
+  return passadas.length ? passadas[passadas.length-1] : null;
+}
+
+function estaConcluida(p){
+  if(p.status === 'concluido' || p.concluido_em) return true;
+  return p.status === 'confirmado' && dataAgendadaPassada(p) !== null;
+}
+
+// distingue as duas origens, para a lista poder dizer porquê
+function motivoConclusao(p){
+  if(p.status === 'concluido' || p.concluido_em) return 'marcada';
+  return dataAgendadaPassada(p) ? 'data' : null;
+}
+
 function renderAll(){
   renderPendentes();
   renderConfirmados();
+  renderObras();
   renderAgenda();
   renderCatalogView();
   renderStats();
@@ -575,13 +608,32 @@ function openPendingDetail(id){
   const html = `
     <h3>${escapeHtml(p.nome_cliente||'Pedido')}</h3>
     <p class="sub-h">Recebido em ${fmtDate(p.created_at)}</p>
-    <div class="info-grid">
-      <div class="box"><div class="k">Telefone</div><div class="v">${escapeHtml(p.telefone)||'—'}</div></div>
-      <div class="box"><div class="k">Tipo de trabalho</div><div class="v">${escapeHtml(p.tipo_servico)||'—'}</div></div>
-      <div class="box full"><div class="k">Morada</div><div class="v">${escapeHtml(p.morada)||'—'}</div></div>
-      <div class="box full"><div class="k">Descrição do cliente</div><div class="v">${escapeHtml(p.descricao)||'—'}</div></div>
-      ${p.observacoes_cliente ? `<div class="box full"><div class="k">Observações</div><div class="v">${escapeHtml(p.observacoes_cliente)}</div></div>` : ''}
-    </div>
+
+    <dl class="ficha">
+      <div class="ficha-linha">
+        <dt>Telefone</dt>
+        <dd>${p.telefone ? `<a href="tel:${escapeHtml(p.telefone)}">${escapeHtml(p.telefone)}</a>` : '—'}</dd>
+      </div>
+      <div class="ficha-linha">
+        <dt>Morada</dt>
+        <dd>${escapeHtml(p.morada) || '—'}</dd>
+      </div>
+      <div class="ficha-linha">
+        <dt>Trabalho</dt>
+        <dd>${p.tipo_servico ? `<span class="tag tag-pend">${escapeHtml(p.tipo_servico)}</span>` : '—'}</dd>
+      </div>
+    </dl>
+
+    ${p.descricao ? `
+      <div class="bloco-texto">
+        <h4>Descrição do cliente</h4>
+        <p>${escapeHtml(p.descricao)}</p>
+      </div>` : ''}
+    ${p.observacoes_cliente ? `
+      <div class="bloco-texto">
+        <h4>Nas palavras do cliente</h4>
+        <p>${escapeHtml(p.observacoes_cliente)}</p>
+      </div>` : ''}
     ${itemsHtml ? `
       <h2 class="section">Trabalhos pedidos pelo cliente</h2>
       ${itemsHtml}
@@ -626,10 +678,150 @@ function openPendingDetail(id){
   });
 }
 
+/* ---------------- obras feitas ---------------- */
+
+// Os filtros vivem aqui e não no HTML, para renderObras() os poder reaplicar
+// sem perder o que estava escrito quando a lista se redesenha.
+let filtroObras = { texto: '', de: '', ate: '', servico: '' };
+
+function obrasFeitas(){
+  return pedidos
+    .filter(p => p.status !== 'pendente' && estaConcluida(p))
+    .sort((a,b) => new Date(b.concluido_em||b.confirmado_em||b.created_at) - new Date(a.concluido_em||a.confirmado_em||a.created_at));
+}
+
+function servicosDe(p){
+  return [...new Set((p.itens||[]).map(it=>{
+    const s = catalog.services.find(s=>s.id===it.serviceId);
+    return s ? s.name : null;
+  }).filter(Boolean))];
+}
+
+function dataConclusao(p){
+  return p.concluido_em || dataAgendadaPassada(p) || p.confirmado_em || p.created_at;
+}
+
+function obrasFiltradas(){
+  const f = filtroObras;
+  const texto = f.texto.trim().toLowerCase();
+  return obrasFeitas().filter(p=>{
+    if(texto){
+      const alvo = [p.nome_cliente, p.nome_orcamento, p.morada, p.tipo_servico]
+        .filter(Boolean).join(' ').toLowerCase();
+      if(!alvo.includes(texto)) return false;
+    }
+    if(f.servico && !servicosDe(p).includes(f.servico)) return false;
+    const d = dataConclusao(p);
+    if(f.de && (!d || String(d).slice(0,10) < f.de)) return false;
+    if(f.ate && (!d || String(d).slice(0,10) > f.ate)) return false;
+    return true;
+  });
+}
+
+function renderObras(){
+  const el = document.getElementById('tab-obras');
+  if(!el) return;
+  const todas = obrasFeitas();
+
+  if(todas.length === 0){
+    el.innerHTML = `<div class="empty">
+      <h2>Ainda sem obras feitas</h2>
+      <p>Um orçamento aparece aqui quando o marcas como concluído, ou quando passa a data que lhe agendaste.</p>
+    </div>`;
+    return;
+  }
+
+  const lista = obrasFiltradas();
+  const totalFiltrado = lista.reduce((soma,p)=> soma + calcTotals(p.itens).total + calcExtras(p), 0);
+  const servicos = [...new Set(todas.flatMap(servicosDe))].sort();
+
+  el.innerHTML = `
+    <div class="filtros">
+      <div class="field">
+        <label for="of-texto">Procurar</label>
+        <input id="of-texto" placeholder="Cliente, morada ou nome do orçamento" value="${escapeHtml(filtroObras.texto)}">
+      </div>
+      <div class="row row-2">
+        <div class="field">
+          <label for="of-de">De</label>
+          <input id="of-de" type="date" value="${escapeHtml(filtroObras.de)}">
+        </div>
+        <div class="field">
+          <label for="of-ate">Até</label>
+          <input id="of-ate" type="date" value="${escapeHtml(filtroObras.ate)}">
+        </div>
+      </div>
+      <div class="field">
+        <label for="of-servico">Tipo de trabalho</label>
+        <select id="of-servico">
+          <option value="">Todos</option>
+          ${servicos.map(s=>`<option value="${escapeHtml(s)}"${filtroObras.servico===s?' selected':''}>${escapeHtml(s)}</option>`).join('')}
+        </select>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="of-limpar">Limpar filtros</button>
+    </div>
+
+    <div class="filtros-resumo">
+      <span>${lista.length} de ${todas.length} obra${todas.length===1?'':'s'}</span>
+      <span class="money">${fmt(totalFiltrado)}</span>
+    </div>
+
+    ${lista.length === 0 ? `
+      <div class="empty"><p>Nenhuma obra corresponde a estes filtros.</p></div>
+    ` : `<div class="list">${lista.map(p=>{
+      const total = calcTotals(p.itens).total + calcExtras(p);
+      const motivo = motivoConclusao(p);
+      return `<article class="card card-clickable" data-id="${p.id}">
+        <div class="card-top">
+          <div>
+            <h3>${escapeHtml(p.nome_orcamento || p.nome_cliente || 'Obra')}</h3>
+            <p class="dim">${escapeHtml(p.nome_cliente||'')}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
+          </div>
+          <span class="money">${fmt(total)}</span>
+        </div>
+        <div class="card-tags">
+          <span class="tag tag-ok">Concluída ${fmtDate(dataConclusao(p))}</span>
+          ${motivo === 'data' ? '<span class="tag">pela data agendada</span>' : ''}
+          ${servicosDe(p).map(s=>`<span class="tag">${escapeHtml(s)}</span>`).join('')}
+        </div>
+      </article>`;
+    }).join('')}</div>`}
+  `;
+
+  const guardar = (campo, id, evento) => {
+    const input = document.getElementById(id);
+    if(!input) return;
+    input.addEventListener(evento, ()=>{
+      filtroObras[campo] = input.value;
+      const posicao = input.selectionStart;
+      renderObras();
+      const novo = document.getElementById(id);
+      if(novo && evento === 'input'){ novo.focus(); try{ novo.setSelectionRange(posicao, posicao); }catch(e){} }
+    });
+  };
+  guardar('texto', 'of-texto', 'input');
+  guardar('de', 'of-de', 'change');
+  guardar('ate', 'of-ate', 'change');
+  guardar('servico', 'of-servico', 'change');
+
+  const limpar = document.getElementById('of-limpar');
+  if(limpar) limpar.addEventListener('click', ()=>{
+    filtroObras = { texto:'', de:'', ate:'', servico:'' };
+    renderObras();
+  });
+
+  el.querySelectorAll('.card-clickable').forEach(card=>{
+    card.addEventListener('click', ()=>openConfirmedDetail(parseInt(card.dataset.id)));
+  });
+}
+
 /* ---------------- confirmados ---------------- */
 function renderConfirmados(){
   const el = document.getElementById('tab-confirmados');
-  const list = pedidos.filter(p=>p.status==='confirmado').sort((a,b)=> new Date(b.confirmado_em||b.created_at) - new Date(a.confirmado_em||a.created_at));
+  // as concluídas saem daqui e passam para o separador das obras feitas
+  const list = pedidos
+    .filter(p=>p.status==='confirmado' && !estaConcluida(p))
+    .sort((a,b)=> new Date(b.confirmado_em||b.created_at) - new Date(a.confirmado_em||a.created_at));
   if(list.length===0){
     el.innerHTML = `<div class="empty">
       <h2>Nenhum orçamento confirmado</h2>
@@ -677,14 +869,19 @@ function openConfirmedDetail(id){
   const cartao = document.querySelector(`.card[data-id="${id}"]`);
   if(cartao) cartao.classList.add('card-selected');
 
+  // Os dados de quem pediu são do cliente, não nossos: mostram-se, não se
+  // corrigem. Um orçamento criado à mão pela equipa ainda não tem cliente
+  // nenhum, e aí os campos têm de continuar a dar para escrever.
+  const veioDoCliente = !!p.created_at && p.id != null && !!p.nome_cliente;
+
   const t = calcTotals(draftItems);
   const html = `
     <h3>Orçamento</h3>
     <p class="sub-h">${p.nome_cliente ? escapeHtml(p.nome_cliente) : 'Cliente não indicado'}${p.morada ? ' · '+escapeHtml(p.morada) : ''}</p>
     <div class="field"><label>Nome do orçamento</label><input id="ed-nome" value="${escapeHtml(p.nome_orcamento||'')}" placeholder="Ex: Reforma cozinha"></div>
     <div class="row2">
-      <div class="field"><label>Cliente</label><input id="ed-cliente" value="${escapeHtml(p.nome_cliente||'')}"></div>
-      <div class="field"><label>Telefone</label><input id="ed-telefone" value="${escapeHtml(p.telefone||'')}"></div>
+      <div class="field"><label>Cliente</label><input id="ed-cliente" value="${escapeHtml(p.nome_cliente||'')}" ${veioDoCliente ? 'readonly' : ''}></div>
+      <div class="field"><label>Telefone</label><input id="ed-telefone" value="${escapeHtml(p.telefone||'')}" ${veioDoCliente ? 'readonly' : ''}></div>
     </div>
     <div class="field"><label>Morada</label><input id="ed-morada" value="${escapeHtml(p.morada||'')}"></div>
     <div class="field">
@@ -713,6 +910,9 @@ function openConfirmedDetail(id){
     <div class="modal-actions">
       <button class="btn btn-danger" id="ed-delete">Excluir</button>
       <button class="btn btn-ghost" id="ed-close">Fechar</button>
+      ${p.id != null ? (estaConcluida(p)
+        ? `<button class="btn btn-ghost" id="ed-reabrir">Voltar a confirmados</button>`
+        : `<button class="btn" id="ed-concluir">Marcar como concluída</button>`) : ''}
       <button class="btn btn-primary" id="ed-save">Guardar</button>
     </div>
   `;
@@ -770,6 +970,34 @@ function openConfirmedDetail(id){
     if(p.id == null){ pedidos = pedidos.filter(x=>x!==p); }
     editingPedidoId = null;
   });
+  const btnConcluir = container.querySelector('#ed-concluir');
+  if(btnConcluir) btnConcluir.addEventListener('click', async ()=>{
+    try{
+      const updated = await apiSend('/api/pedidos/'+p.id, 'PATCH', { status:'concluido' });
+      pedidos = pedidos.map(x=>x.id===p.id ? updated : x);
+      fecharDetalhe();
+      renderAll();
+      showToast('Obra marcada como concluída');
+    }catch(e){ showToast('Erro ao marcar a obra'); }
+  });
+
+  const btnReabrir = container.querySelector('#ed-reabrir');
+  if(btnReabrir) btnReabrir.addEventListener('click', async ()=>{
+    // Voltar a confirmados serve para as obras que a agenda deu como feitas
+    // mas afinal atrasaram. Se a data agendada ficasse para trás, ela voltava
+    // logo a "concluída" — por isso avisamos em vez de fingir que resolvemos.
+    try{
+      const updated = await apiSend('/api/pedidos/'+p.id, 'PATCH', { status:'confirmado' });
+      pedidos = pedidos.map(x=>x.id===p.id ? updated : x);
+      fecharDetalhe();
+      renderAll();
+      const aindaVoltaPelaData = dataAgendadaPassada(updated) !== null;
+      showToast(aindaVoltaPelaData
+        ? 'Devolvida a confirmados — mas a data agendada já passou, mude-a na agenda'
+        : 'Devolvida a confirmados');
+    }catch(e){ showToast('Erro ao reabrir a obra'); }
+  });
+
   container.querySelector('#ed-delete').addEventListener('click', async ()=>{
     // orcamento ainda nao gravado: nao ha nada no servidor para apagar,
     // basta descartar o rascunho e fechar.
@@ -1175,6 +1403,13 @@ document.getElementById('mat-confirm').addEventListener('click', async ()=>{
   showToast('Material guardado');
 });
 
+// nomes legiveis para os tipos de custo extra guardados
+const NOMES_EXTRA = {
+  mao_de_obra: 'Mão de obra / ajudante',
+  material: 'Material extra',
+  outro: 'Outro'
+};
+
 /* ---------------- agenda (calendário) ---------------- */
 const TIPO_AGENDA = {
   visita:  { label:'Visita',           classe:'tag-pend' },
@@ -1340,6 +1575,19 @@ function renderStats(){
   const servicoEntries = Object.entries(porServico).sort((a,b)=>b[1]-a[1]);
   const maxServico = servicoEntries.length ? servicoEntries[0][1] : 0;
 
+  // custos adicionais: quanto, em quantos orçamentos, e repartidos por tipo
+  const extrasPorTipo = {};
+  let orcamentosComExtras = 0;
+  confirmados.forEach(p=>{
+    const extras = p.extras || [];
+    if(extras.length) orcamentosComExtras++;
+    extras.forEach(e=>{
+      const tipo = e.tipo || 'outro';
+      extrasPorTipo[tipo] = (extrasPorTipo[tipo]||0) + (parseFloat(e.valor)||0);
+    });
+  });
+  const extrasPorTipoEntries = Object.entries(extrasPorTipo).sort((a,b)=>b[1]-a[1]);
+
   if(total===0){
     el.innerHTML = `<div class="empty">
       <h2>Ainda sem dados</h2>
@@ -1355,6 +1603,8 @@ function renderStats(){
       <div class="stat"><div class="v">${pendentesCount}</div><div class="k">Pendentes</div></div>
       <div class="stat"><div class="v">${taxa}%</div><div class="k">Taxa de confirmação</div></div>
       <div class="stat stat-wide"><div class="v money">${fmt(valorTotal)}</div><div class="k">Valor total confirmado</div></div>
+      <div class="stat"><div class="v money">${fmt(totalExtras)}</div><div class="k">Gastos em custos adicionais</div></div>
+      <div class="stat"><div class="v">${orcamentosComExtras}</div><div class="k">Orçamentos com custos extra</div></div>
       <div class="stat stat-wide">
         <div class="stat-rows">
           <div class="stat-row"><span>Material (itens)</span><span class="money">${fmt(totalMaterial)}</span></div>
@@ -1362,6 +1612,15 @@ function renderStats(){
           <div class="stat-row"><span>Custos adicionais</span><span class="money">${fmt(totalExtras)}</span></div>
         </div>
       </div>
+      ${extrasPorTipoEntries.length ? `
+      <div class="stat stat-wide">
+        <div class="k stat-titulo">Custos adicionais por tipo</div>
+        <div class="stat-rows">
+          ${extrasPorTipoEntries.map(([tipo, valor])=>
+            `<div class="stat-row"><span>${escapeHtml(NOMES_EXTRA[tipo] || tipo)}</span><span class="money">${fmt(valor)}</span></div>`
+          ).join('')}
+        </div>
+      </div>` : ''}
       <div class="stat stat-wide"><div class="v money">${fmt(ticketMedio)}</div><div class="k">Valor médio por orçamento confirmado</div></div>
     </div>
     ${servicoEntries.length ? `

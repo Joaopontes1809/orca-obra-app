@@ -129,3 +129,25 @@
   z-index: 60;
 }
 .toast.show { opacity: 1; }
+
+/* O detalhe do pedido e os modais que ele abre (item, custo extra, confirmar)
+   partilhavam o mesmo nivel, e quem ganhava era a ordem no HTML — o modal de
+   item aparecia por baixo do detalhe. Estes sobem por cima. */
+#item-overlay,
+#custo-overlay,
+#confirm-overlay,
+#service-overlay,
+#material-overlay,
+#agenda-overlay,
+#link-overlay { z-index: 55; }
+
+/* campos que se mostram mas nao se editam */
+input[readonly], textarea[readonly] {
+  background: var(--accent-soft);
+  color: var(--dim);
+  cursor: default;
+}
+input[readonly]:focus, textarea[readonly]:focus {
+  border-color: var(--border);
+  box-shadow: none;
+}

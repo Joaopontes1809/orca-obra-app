@@ -106,11 +106,6 @@
       <label>Descreva com mais detalhe (opcional)</label>
       <textarea id="f-descricao" placeholder="Ex: a casa de banho tem infiltração, gostaria de rever o piso todo"></textarea>
     </div>
-    <div class="field">
-      <label>Observações (opcional)</label>
-      <textarea id="f-obs" placeholder="Prazos, preferências, disponibilidade para visita, etc."></textarea>
-    </div>
-
     <button class="btn btn-primary btn-block" id="btn-enviar">Confirmar e enviar pedido</button>
     <p class="error" id="form-error">Preencha o nome, a morada, e adicione pelo menos um trabalho.</p>
   </div>
@@ -147,13 +142,11 @@ function populateMaterial(){
   const s = catalog.services.find(s=>s.id===sid);
   const mats = catalog.materials.filter(m=>m.serviceId===sid);
   const sel = document.getElementById('f-material');
-  sel.innerHTML = mats.map(m=>{
-    const material = num(m.price), mao = num(m.laborPrice);
-    const detalhe = mao > 0
-      ? `${fmt(material + mao)}/${m.unit} (material ${fmt(material)} + mão de obra ${fmt(mao)})`
-      : `${fmt(material)}/${m.unit}`;
-    return `<option value="${m.id}">${escapeHtml(m.name)} — ${detalhe}</option>`;
-  }).join('')
+  // só o preço do material: a mão de obra aparece no quadro da estimativa,
+  // que é onde o cliente a vê separada do resto
+  sel.innerHTML = mats.map(m=>
+    `<option value="${m.id}">${escapeHtml(m.name)} — ${fmt(num(m.price))}/${m.unit}</option>`
+  ).join('')
     + `<option value="__custom__">Não sei / a definir na visita</option>`;
   document.getElementById('f-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
 }
@@ -373,7 +366,10 @@ document.getElementById('btn-enviar').addEventListener('click', async ()=>{
         descricao: document.getElementById('f-descricao').value.trim(),
         unidade: null,
         itens: items,
-        observacoes_cliente: document.getElementById('f-obs').value.trim()
+        // O texto livre da caixa da IA nunca era enviado: o cliente escrevia o
+        // que queria, a IA lia, e depois aquilo perdia-se. É muitas vezes a
+        // parte mais útil do pedido, por isso vai junto.
+        observacoes_cliente: document.getElementById('ai-texto').value.trim()
       })
     });
     if(!res.ok) throw new Error('falha ao enviar');
