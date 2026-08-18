@@ -14,14 +14,17 @@ const DEFAULT_CATALOG = {
     { id: 's-hidraulica', name: 'Canalização', laborPercent: 80, unit: 'ponto' },
     { id: 's-outro', name: 'Outro / não sei especificar', laborPercent: 50, unit: 'un' }
   ],
+  // price = material por unidade; laborPrice = mão de obra por unidade.
+  // Os valores de arranque saem da percentagem que o serviço tinha antes, para
+  // as contas não mudarem de um dia para o outro sem ninguém pedir.
   materials: [
-    { id: 'm-porc', name: 'Pavimento porcelânico padrão', serviceId: 's-piso', unit: 'm²', price: 15 },
-    { id: 'm-ceram', name: 'Pavimento cerâmico económico', serviceId: 's-piso', unit: 'm²', price: 8 },
-    { id: 'm-tinta-lat', name: 'Tinta acrílica interior (2 demãos)', serviceId: 's-pintura', unit: 'm²', price: 3 },
-    { id: 'm-tijolo', name: 'Tijolo / bloco (m² de parede)', serviceId: 's-parede', unit: 'm²', price: 25 },
-    { id: 'm-telha', name: 'Telha cerâmica', serviceId: 's-telhado', unit: 'm²', price: 20 },
-    { id: 'm-ponto-el', name: 'Ponto elétrico completo', serviceId: 's-eletrica', unit: 'ponto', price: 45 },
-    { id: 'm-ponto-hid', name: 'Ponto de canalização completo', serviceId: 's-hidraulica', unit: 'ponto', price: 60 }
+    { id: 'm-porc', name: 'Pavimento porcelânico padrão', serviceId: 's-piso', unit: 'm²', price: 15, laborPrice: 13.5 },
+    { id: 'm-ceram', name: 'Pavimento cerâmico económico', serviceId: 's-piso', unit: 'm²', price: 8, laborPrice: 7.2 },
+    { id: 'm-tinta-lat', name: 'Tinta acrílica interior (2 demãos)', serviceId: 's-pintura', unit: 'm²', price: 3, laborPrice: 7.5 },
+    { id: 'm-tijolo', name: 'Tijolo / bloco (m² de parede)', serviceId: 's-parede', unit: 'm²', price: 25, laborPrice: 15 },
+    { id: 'm-telha', name: 'Telha cerâmica', serviceId: 's-telhado', unit: 'm²', price: 20, laborPrice: 12 },
+    { id: 'm-ponto-el', name: 'Ponto elétrico completo', serviceId: 's-eletrica', unit: 'ponto', price: 45, laborPrice: 36 },
+    { id: 'm-ponto-hid', name: 'Ponto de canalização completo', serviceId: 's-hidraulica', unit: 'ponto', price: 60, laborPrice: 48 }
   ]
 };
 
@@ -64,9 +67,32 @@ async function initDb(pool) {
     );
   `);
 
-  const cat = await pool.query("SELECT 1 FROM config WHERE key = 'catalogo'");
+  const cat = await pool.query("SELECT value FROM config WHERE key = 'catalogo'");
   if (cat.rows.length === 0) {
     await pool.query("INSERT INTO config (key, value) VALUES ('catalogo', $1)", [DEFAULT_CATALOG]);
+  } else {
+    // A mão de obra passou de percentagem no serviço a valor por unidade no
+    // material. Os catálogos criados antes disso não têm laborPrice, e sem
+    // preenchimento a mão de obra aparecia a zero em todos os orçamentos.
+    // Convertemos uma vez, a partir da percentagem que o serviço tinha, para
+    // as contas não mudarem. Só toca em materiais a que falte o campo.
+    const catalogo = cat.rows[0].value || {};
+    const servicos = catalogo.services || [];
+    const materiais = catalogo.materials || [];
+    let convertidos = 0;
+
+    for (const m of materiais) {
+      if (m.laborPrice !== undefined && m.laborPrice !== null) continue;
+      const s = servicos.find(s => s.id === m.serviceId);
+      const percentagem = s && Number.isFinite(Number(s.laborPercent)) ? Number(s.laborPercent) : 0;
+      m.laborPrice = Math.round(Number(m.price || 0) * (percentagem / 100) * 100) / 100;
+      convertidos++;
+    }
+
+    if (convertidos > 0) {
+      await pool.query("UPDATE config SET value = $1 WHERE key = 'catalogo'", [catalogo]);
+      console.log(`Catálogo: mão de obra convertida em ${convertidos} material(ais).`);
+    }
   }
   const emp = await pool.query("SELECT 1 FROM config WHERE key = 'empresa'");
   if (emp.rows.length === 0) {
@@ -101,6 +127,12 @@ function limparItens(itens) {
     unit: texto(it && it.unit, 20) || '',
     quantity: numero(it && it.quantity),
     unitPrice: numero(it && it.unitPrice),
+    // laborUnitPrice e o modelo actual; laborPercent fica para itens antigos e
+    // para quando nao ha material escolhido. Guardar null e diferente de zero:
+    // null diz "usa a percentagem", zero diz "mao de obra e gratis".
+    laborUnitPrice: it && it.laborUnitPrice !== null && it.laborUnitPrice !== undefined && it.laborUnitPrice !== ''
+      ? numero(it.laborUnitPrice)
+      : null,
     laborPercent: numero(it && it.laborPercent)
   }));
 }

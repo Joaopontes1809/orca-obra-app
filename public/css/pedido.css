@@ -76,3 +76,20 @@
 
 /* --- ecrã de confirmação --- */
 .done-icon { width: 52px; height: 52px; border-radius: var(--r-lg); margin: 0 auto var(--s-4); display: block; }
+
+/* divisao material / mao de obra dentro do quadro da estimativa */
+.estimate-divisao {
+  margin-top: var(--s-3);
+  padding-top: var(--s-3);
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-1);
+}
+.estimate-linha {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--dim);
+}
+.estimate-linha .money { color: var(--text); }

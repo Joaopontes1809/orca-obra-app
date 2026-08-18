@@ -88,7 +88,17 @@
         <span>Estimativa</span>
         <span class="amt money" id="estimate-total">0,00 €</span>
       </div>
-      <p class="estimate-note">Valor estimado com base nos preços praticados — o valor final é confirmado após visita técnica.</p>
+      <div class="estimate-divisao">
+        <div class="estimate-linha">
+          <span>Material</span>
+          <span class="money" id="estimate-material">0,00 €</span>
+        </div>
+        <div class="estimate-linha">
+          <span>Mão de obra</span>
+          <span class="money" id="estimate-mao">0,00 €</span>
+        </div>
+      </div>
+      <p class="estimate-note"><strong>Valores sem IVA.</strong> Estimativa com base nos preços praticados — o valor final é confirmado após visita técnica.</p>
     </div>
 
     <h2 class="section-title">Mais detalhes</h2>
@@ -137,7 +147,13 @@ function populateMaterial(){
   const s = catalog.services.find(s=>s.id===sid);
   const mats = catalog.materials.filter(m=>m.serviceId===sid);
   const sel = document.getElementById('f-material');
-  sel.innerHTML = mats.map(m=>`<option value="${m.id}">${escapeHtml(m.name)} — ${fmt(m.price)}/${m.unit}</option>`).join('')
+  sel.innerHTML = mats.map(m=>{
+    const material = num(m.price), mao = num(m.laborPrice);
+    const detalhe = mao > 0
+      ? `${fmt(material + mao)}/${m.unit} (material ${fmt(material)} + mão de obra ${fmt(mao)})`
+      : `${fmt(material)}/${m.unit}`;
+    return `<option value="${m.id}">${escapeHtml(m.name)} — ${detalhe}</option>`;
+  }).join('')
     + `<option value="__custom__">Não sei / a definir na visita</option>`;
   document.getElementById('f-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
 }
@@ -171,7 +187,8 @@ document.getElementById('btn-ai-analisar').addEventListener('click', async ()=>{
         desc: mat ? mat.name : (sug.material ? sug.material : s.name+' — a definir'),
         quantity: sug.quantidade || 0,
         unit: s.unit,
-        unitPrice: mat ? mat.price : 0,
+        unitPrice: mat ? num(mat.price) : 0,
+        laborUnitPrice: mat ? num(mat.laborPrice) : null,
         laborPercent: s.laborPercent
       });
       added++;
@@ -245,12 +262,6 @@ function showSelectedMaterial(){
   });
 }
 
-function calcItem(it){
-  const materialCost = (it.quantity||0) * (it.unitPrice||0);
-  const laborCost = materialCost * ((it.laborPercent||0)/100);
-  return { materialCost, laborCost, total: materialCost + laborCost };
-}
-
 document.getElementById('btn-add-item').addEventListener('click', ()=>{
   const sid = document.getElementById('f-servico').value;
   const s = catalog.services.find(s=>s.id===sid);
@@ -274,7 +285,8 @@ document.getElementById('btn-add-item').addEventListener('click', ()=>{
     desc: usingCustom ? selectedCustomMaterial.name : (mat ? mat.name : (s ? s.name+' — a definir' : 'Item')),
     quantity: qty,
     unit: s ? s.unit : 'un',
-    unitPrice: usingCustom ? selectedCustomMaterial.price : (mat ? mat.price : 0),
+    unitPrice: usingCustom ? num(selectedCustomMaterial.price) : (mat ? num(mat.price) : 0),
+    laborUnitPrice: (!usingCustom && mat) ? num(mat.laborPrice) : null,
     laborPercent: s ? s.laborPercent : 0
   });
   document.getElementById('f-qty').value = '';
@@ -292,8 +304,8 @@ function renderItems(){
       <div class="item-info">
         <div class="item-desc">${escapeHtml(it.desc)}</div>
         <div class="item-sub">
-          ${hasQty ? `${it.quantity} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
-          ${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · preço a definir na visita'}
+          ${hasQty ? `${num(it.quantity)} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
+          ${(it.unitPrice && hasQty) ? ` · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}` : (it.unitPrice ? '' : ' · preço a definir na visita')}
         </div>
       </div>
       <div class="item-actions">
@@ -322,8 +334,10 @@ function updateEstimateOnly(){
     return;
   }
   box.classList.remove('hidden');
-  const total = items.reduce((sum,it)=> sum + calcItem(it).total, 0);
-  document.getElementById('estimate-total').textContent = fmt(total);
+  const t = calcTotals(items);
+  document.getElementById('estimate-total').textContent = fmt(t.total);
+  document.getElementById('estimate-material').textContent = fmt(t.material);
+  document.getElementById('estimate-mao').textContent = fmt(t.labor);
 }
 
 document.getElementById('btn-enviar').addEventListener('click', async ()=>{

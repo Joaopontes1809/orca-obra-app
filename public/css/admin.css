@@ -249,3 +249,25 @@
 .login-erro[hidden] { display: none; }
 
 .btn-sair { color: var(--danger); }
+
+/* dois valores por material no catalogo: material e mao de obra */
+.valor-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+}
+.valor-campo span {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+}
+.valor-campo .item-input { width: 88px; }
+
+.campo-nota {
+  font-size: 12px;
+  color: var(--dim);
+  margin-top: var(--s-1);
+}

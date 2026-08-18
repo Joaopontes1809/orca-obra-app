@@ -14,6 +14,37 @@ function num(v) {
   return Number.isFinite(n) ? n : 0;
 }
 
+/**
+ * Custo de um item, separado em material e mão de obra.
+ *
+ * A mão de obra vem do valor por unidade do material (laborUnitPrice). Se o
+ * item não o tiver — porque é antigo, porque o cliente escolheu "a definir na
+ * visita", ou porque veio da pesquisa de preços — recuamos para a percentagem
+ * do serviço, que era o modelo anterior.
+ *
+ * Vive aqui porque as duas páginas precisam exactamente da mesma conta, e
+ * dinheiro calculado em dois sítios acaba por divergir.
+ */
+function calcItem(it) {
+  const quantidade = num(it && it.quantity);
+  const materialCost = quantidade * num(it && it.unitPrice);
+  const temValorMaoObra = it && it.laborUnitPrice !== null && it.laborUnitPrice !== undefined && it.laborUnitPrice !== '';
+  const laborCost = temValorMaoObra
+    ? quantidade * num(it.laborUnitPrice)
+    : materialCost * (num(it && it.laborPercent) / 100);
+  return { materialCost, laborCost, total: materialCost + laborCost };
+}
+
+function calcTotals(items) {
+  return (items || []).reduce((acc, it) => {
+    const c = calcItem(it);
+    acc.material += c.materialCost;
+    acc.labor += c.laborCost;
+    acc.total += c.total;
+    return acc;
+  }, { material: 0, labor: 0, total: 0 });
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

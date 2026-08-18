@@ -133,8 +133,8 @@
         <input id="im-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
       </div>
       <div class="field">
-        <label>Mão de obra (%)</label>
-        <input id="im-labor" type="number" inputmode="decimal" placeholder="0" min="0" step="1">
+        <label>Mão de obra (€/un)</label>
+        <input id="im-labor" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
       </div>
     </div>
     <div class="modal-actions">
@@ -187,9 +187,14 @@
         <input id="mat-unit" placeholder="m²">
       </div>
       <div class="field">
-        <label>Preço unitário (€)</label>
+        <label>Material por unidade (€)</label>
         <input id="mat-price" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
       </div>
+    </div>
+    <div class="field">
+      <label>Mão de obra por unidade (€)</label>
+      <input id="mat-labor" type="number" inputmode="decimal" placeholder="0,00" min="0" step="0.01">
+      <p class="campo-nota">Quanto custa aplicar este material, por unidade. Somado ao material dá o valor cobrado ao cliente.</p>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="mat-cancel">Cancelar</button>
@@ -484,18 +489,6 @@ brandNameEls.forEach(el=>{
 });
 
 /* ---------------- calc ---------------- */
-function calcItem(it){
-  const materialCost = (it.quantity||0) * (it.unitPrice||0);
-  const laborCost = materialCost * ((it.laborPercent||0)/100);
-  return { materialCost, laborCost, total: materialCost + laborCost };
-}
-function calcTotals(items){
-  return (items||[]).reduce((acc,it)=>{
-    const c = calcItem(it);
-    acc.material += c.materialCost; acc.labor += c.laborCost; acc.total += c.total;
-    return acc;
-  }, {material:0, labor:0, total:0});
-}
 function calcExtras(p){
   const extras = p.extras || [];
   return extras.reduce((s,e)=> s + (parseFloat(e.valor)||0), 0);
@@ -755,7 +748,9 @@ function openConfirmedDetail(id){
           id: uid(), serviceId: s.id, materialId: mat ? mat.id : null,
           desc: mat ? mat.name : (sug.material || s.name+' — a definir'),
           quantity: sug.quantidade || 0, unit: s.unit,
-          unitPrice: mat ? mat.price : 0, laborPercent: s.laborPercent
+          unitPrice: mat ? num(mat.price) : 0,
+          laborUnitPrice: mat ? num(mat.laborPrice) : null,
+          laborPercent: s.laborPercent
         });
         added++;
       });
@@ -864,7 +859,7 @@ function renderEditItems(){
       return `<div class="item-row">
         <div>
           <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
-          <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')} × ${fmt(it.unitPrice)} + ${num(it.laborPercent)}%</div>
+          <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')} · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}</div>
         </div>
         <div class="row-inline">
           <div class="val num">${fmt(c.total)}</div>
@@ -963,8 +958,8 @@ function applyMaterialDefaults(){
   const s = catalog.services.find(s=>s.id===imService.value);
   const mat = catalog.materials.find(m=>m.id===imMaterial.value);
   document.getElementById('im-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
-  document.getElementById('im-labor').value = s ? s.laborPercent : 0;
-  document.getElementById('im-price').value = mat ? mat.price : '';
+  document.getElementById('im-labor').value = mat ? num(mat.laborPrice) : 0;
+  document.getElementById('im-price').value = mat ? num(mat.price) : '';
 }
 imService.addEventListener('change', populateMaterialSelect);
 imMaterial.addEventListener('change', applyMaterialDefaults);
@@ -1003,7 +998,8 @@ document.getElementById('im-confirm').addEventListener('click', ()=>{
     materialId: imMaterial.value==='__custom__' ? null : imMaterial.value,
     desc: document.getElementById('im-desc').value.trim(),
     quantity: qty, unit: s ? s.unit : '', unitPrice: price,
-    laborPercent: isNaN(labor) ? 0 : labor
+    laborUnitPrice: isNaN(labor) ? 0 : labor,
+    laborPercent: 0
   });
   itemOverlay.classList.remove('open');
   renderEditItems();
@@ -1042,7 +1038,14 @@ function renderCatalogView(){
           <div class="item-meta">${s?escapeHtml(s.name):'—'} · por ${escapeHtml(m.unit)}</div>
         </div>
         <div class="item-actions">
-          <input type="number" min="0" step="0.01" value="${m.price}" data-mat="${m.id}" class="item-input mat-price">
+          <label class="valor-campo">
+            <span>Material</span>
+            <input type="number" min="0" step="0.01" value="${num(m.price)}" data-mat="${m.id}" class="item-input mat-price" aria-label="Preço do material por ${escapeHtml(m.unit)}">
+          </label>
+          <label class="valor-campo">
+            <span>Mão de obra</span>
+            <input type="number" min="0" step="0.01" value="${num(m.laborPrice)}" data-mat-labor="${m.id}" class="item-input mat-labor" aria-label="Mão de obra por ${escapeHtml(m.unit)}">
+          </label>
           <button class="item-del" data-mat-search="${m.id}" title="Pesquisar preço na internet">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
           </button>
@@ -1072,7 +1075,14 @@ function renderCatalogView(){
     inp.addEventListener('change', async ()=>{
       const m = catalog.materials.find(m=>m.id===inp.dataset.mat);
       m.price = parseFloat(inp.value)||0;
-      await saveCatalog(); showToast('Preço atualizado');
+      await saveCatalog(); showToast('Preço do material atualizado');
+    });
+  });
+  matEl.querySelectorAll('.mat-labor').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const m = catalog.materials.find(m=>m.id===inp.dataset.matLabor);
+      m.laborPrice = parseFloat(inp.value)||0;
+      await saveCatalog(); showToast('Mão de obra atualizada');
     });
   });
   matEl.querySelectorAll('[data-mat-search]').forEach(b=>{
@@ -1118,7 +1128,8 @@ function openMaterialModal(id){
   document.getElementById('mat-service').innerHTML = catalog.services.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
   document.getElementById('mat-service').value = m ? m.serviceId : (catalog.services[0] ? catalog.services[0].id : '');
   document.getElementById('mat-unit').value = m ? m.unit : (catalog.services[0] ? catalog.services[0].unit : 'm²');
-  document.getElementById('mat-price').value = m ? m.price : '';
+  document.getElementById('mat-price').value = m ? num(m.price) : '';
+  document.getElementById('mat-labor').value = m ? num(m.laborPrice) : '';
   materialOverlay.classList.add('open');
 }
 
@@ -1149,12 +1160,13 @@ document.getElementById('mat-confirm').addEventListener('click', async ()=>{
   const serviceId = document.getElementById('mat-service').value;
   const unit = document.getElementById('mat-unit').value.trim() || 'm²';
   const price = parseFloat(document.getElementById('mat-price').value) || 0;
+  const laborPrice = parseFloat(document.getElementById('mat-labor').value) || 0;
   if(!name){ showToast('Informe o nome'); return; }
   if(editingMaterialId){
     const m = catalog.materials.find(x=>x.id===editingMaterialId);
-    m.name = name; m.serviceId = serviceId; m.unit = unit; m.price = price;
+    m.name = name; m.serviceId = serviceId; m.unit = unit; m.price = price; m.laborPrice = laborPrice;
   } else {
-    catalog.materials.push({ id:'m-'+uid(), name, serviceId, unit, price });
+    catalog.materials.push({ id:'m-'+uid(), name, serviceId, unit, price, laborPrice });
   }
   await saveCatalog(); renderCatalogView(); materialOverlay.classList.remove('open');
   showToast('Material guardado');
