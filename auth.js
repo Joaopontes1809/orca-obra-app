@@ -21,7 +21,7 @@ const ROTAS_PUBLICAS = [
 function segredo() {
   // SESSION_SECRET é o ideal; sem ele, deriva-se da password para que uma só
   // variável baste. Trocar a password invalida as sessões, o que é desejável.
-  const base = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD || '';
+  const base = process.env.SESSION_SECRET || process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD || '';
   return crypto.createHash('sha256').update('krona|' + base).digest();
 }
 
@@ -49,10 +49,40 @@ function sessaoValida(valor) {
   return Number(expira) > Date.now();
 }
 
+// Formato do hash: scrypt$<sal em hex>$<derivada em hex>
+function criarHash(password) {
+  const sal = crypto.randomBytes(16);
+  const derivada = crypto.scryptSync(password, sal, 64);
+  return ['scrypt', sal.toString('hex'), derivada.toString('hex')].join('$');
+}
+
+function confereHash(recebida, hash) {
+  const partes = String(hash).split('$');
+  if (partes.length !== 3 || partes[0] !== 'scrypt') return false;
+  let sal, esperada;
+  try {
+    sal = Buffer.from(partes[1], 'hex');
+    esperada = Buffer.from(partes[2], 'hex');
+  } catch (e) { return false; }
+  if (sal.length === 0 || esperada.length === 0) return false;
+  const derivada = crypto.scryptSync(recebida, sal, esperada.length);
+  return crypto.timingSafeEqual(derivada, esperada);
+}
+
+function haPassword() {
+  return !!(process.env.ADMIN_PASSWORD_HASH || process.env.ADMIN_PASSWORD);
+}
+
 function passwordCorreta(recebida) {
+  if (typeof recebida !== 'string') return false;
+
+  // Preferimos o hash. O ADMIN_PASSWORD em texto ainda funciona, para nao
+  // trancar ninguem de fora durante a transicao, mas e o caminho a abandonar.
+  const hash = process.env.ADMIN_PASSWORD_HASH;
+  if (hash) return confereHash(recebida, hash);
+
   const esperada = process.env.ADMIN_PASSWORD;
   if (!esperada) return false;
-  if (typeof recebida !== 'string') return false;
   // digerir primeiro iguala os comprimentos, que timingSafeEqual exige
   const a = crypto.createHash('sha256').update(recebida).digest();
   const b = crypto.createHash('sha256').update(esperada).digest();
@@ -103,7 +133,7 @@ function exigirSessao(req, res, next) {
 
 function registarRotas(app) {
   app.post('/api/login', (req, res) => {
-    if (!process.env.ADMIN_PASSWORD) {
+    if (!haPassword()) {
       return res.status(503).json({ error: 'painel sem password configurada' });
     }
     if (!passwordCorreta(req.body && req.body.password)) {
@@ -119,11 +149,12 @@ function registarRotas(app) {
   });
 
   app.get('/api/sessao', (req, res) => {
-    res.json({ autenticado: autenticado(req), configurado: !!process.env.ADMIN_PASSWORD });
+    res.json({ autenticado: autenticado(req), configurado: haPassword() });
   });
 }
 
 module.exports = {
   NOME_COOKIE, DURACAO_MS, exigirSessao, registarRotas,
-  criarSessao, sessaoValida, passwordCorreta, autenticado, cookieSessao
+  criarSessao, sessaoValida, passwordCorreta, autenticado, cookieSessao,
+  criarHash, haPassword
 };

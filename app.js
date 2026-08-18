@@ -1,6 +1,8 @@
 const express = require('express');
 const path = require('path');
 const auth = require('./auth');
+const seg = require('./seguranca');
+const { limitar } = require('./limites');
 
 const DEFAULT_CATALOG = {
   services: [
@@ -106,10 +108,20 @@ function limparItens(itens) {
 function createApp(pool) {
   const app = express();
   app.use(express.json());
+  // atras do proxy do Render, para o req.ip ser o do cliente e nao o do proxy
+  app.set('trust proxy', 1);
+
+  app.use(seg.cabecalhos);
+  app.use(seg.bloquearPaginasCruas);
   app.use(express.static(path.join(__dirname, 'public')));
 
   // Login e sessao. O middleware protege tudo em /api excepto o que o
   // formulario publico do cliente precisa — ver ROTAS_PUBLICAS em auth.js.
+  app.use('/api/login', limitar({
+    nome: 'login', max: 8, janelaMs: 15 * 60 * 1000, soFalhas: true,
+    mensagem: 'Demasiadas tentativas. Tente daqui a uns minutos.'
+  }));
+
   auth.registarRotas(app);
   app.use(auth.exigirSessao);
 
@@ -153,7 +165,11 @@ function createApp(pool) {
   });
 
   // criado pelo cliente através do link público
-  app.post('/api/pedidos', async (req, res) => {
+  // o formulario e publico: sem travao, qualquer pessoa enche a base de dados
+  app.post('/api/pedidos', limitar({
+    nome: 'pedidos', max: 10, janelaMs: 60 * 60 * 1000,
+    mensagem: 'Demasiados pedidos enviados. Tente mais tarde.'
+  }), async (req, res) => {
     try {
       const { nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens } = req.body;
       if (!nome_cliente || !morada) {
@@ -298,8 +314,8 @@ function createApp(pool) {
     }
   });
 
-  app.get('/pedido', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pedido.html')));
-  app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'admin.html')));
+  app.get('/pedido', seg.servirPagina('pedido.html'));
+  app.get('/', seg.servirPagina('admin.html'));
 
   /* ---------------- IA (Google Gemini — camada gratuita) ---------------- */
   async function callGemini(system, userText, maxTokens) {
