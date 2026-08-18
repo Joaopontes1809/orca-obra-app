@@ -160,6 +160,7 @@
       <div class="field">
         <label>Mão de obra padrão (%)</label>
         <input id="svc-labor" type="number" inputmode="decimal" placeholder="50" min="0" step="1" value="50">
+        <p class="campo-nota">Só entra em conta quando o cliente não escolhe um material do catálogo — nesses casos a mão de obra é esta percentagem do valor do material.</p>
       </div>
     </div>
     <div class="modal-actions">
@@ -1018,8 +1019,10 @@ function renderCatalogView(){
           <div class="item-meta">unidade: ${escapeHtml(s.unit)}</div>
         </div>
         <div class="item-actions">
-          <input type="number" min="0" step="1" value="${s.laborPercent}" data-svc="${s.id}" class="item-input svc-labor">
-          <span class="item-suffix">%</span>
+          <label class="valor-campo">
+            <span title="Só usada quando o cliente não escolhe um material do catálogo">Mão de obra %</span>
+            <input type="number" min="0" step="1" value="${num(s.laborPercent)}" data-svc="${s.id}" class="item-input svc-labor" aria-label="Mão de obra em percentagem, usada quando não há material escolhido">
+          </label>
           <button class="item-del" data-svc-del="${s.id}">×</button>
         </div>
       </div>
