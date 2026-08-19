@@ -133,13 +133,12 @@
 /* O detalhe do pedido e os modais que ele abre (item, custo extra, confirmar)
    partilhavam o mesmo nivel, e quem ganhava era a ordem no HTML — o modal de
    item aparecia por baixo do detalhe. Estes sobem por cima. */
-#item-overlay,
-#custo-overlay,
-#confirm-overlay,
-#service-overlay,
-#material-overlay,
-#agenda-overlay,
-#link-overlay { z-index: 55; }
+/* O detalhe do pedido é a camada de baixo: tudo o que ele abre — item, custo
+   extra, pagamento, confirmação — vem por cima. Antes isto era uma lista de
+   nomes, e cada modal novo ficava esquecido dela e abria por baixo. Assim
+   qualquer modal futuro já nasce à frente, sem ninguém se lembrar de nada. */
+#detail-overlay { z-index: 50; }
+.overlay:not(#detail-overlay) { z-index: 55; }
 
 /* campos que se mostram mas nao se editam */
 input[readonly], textarea[readonly] {
