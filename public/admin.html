@@ -656,10 +656,12 @@ function openPendingDetail(id){
     const c = calcItem(it);
     return `<div class="item-row">
       <div>
-        <div class="desc">${escapeHtml(it.desc)}</div>
-        <div class="sub">${num(it.quantity)} ${escapeHtml(it.unit||'')}${it.unitPrice ? ' × '+fmt(it.unitPrice) : ' · a definir'}</div>
+        <div class="desc">${it.comodo ? `<span class="etiqueta-comodo">${escapeHtml(it.comodo)}</span>` : ``}${escapeHtml(it.desc)}</div>
+        <div class="sub">${it.empreitada
+          ? 'Empreitada · orçamentar na visita'
+          : `${num(it.quantity)} ${escapeHtml(it.unit||'')} · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}${it.unitPrice ? '' : ' · material a definir na visita'}`}</div>
       </div>
-      <div class="val num">${it.unitPrice ? fmt(c.total) : '—'}</div>
+      <div class="val num">${c.total > 0 ? fmt(c.total) : '—'}</div>
     </div>`;
   }).join('') : '';
   const html = `
@@ -1206,7 +1208,7 @@ function renderEditItems(){
       const s = catalog.services.find(s=>s.id===it.serviceId);
       return `<div class="item-row">
         <div>
-          <div class="desc">${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
+          <div class="desc">${it.comodo ? `<span class="etiqueta-comodo">${escapeHtml(it.comodo)}</span>` : ``}${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
           <div class="sub">${it.unit ? num(it.quantity)+' '+escapeHtml(it.unit)+' · ' : 'Empreitada · '}material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}</div>
         </div>
         <div class="row-inline">

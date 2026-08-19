@@ -458,3 +458,16 @@
 
 .stat-pago .v { color: var(--ok); }
 .stat-falta .v { color: var(--pend); }
+
+/* etiqueta da divisão, nas linhas de item do orçamento */
+.etiqueta-comodo {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  margin-right: var(--s-2);
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  vertical-align: middle;
+}

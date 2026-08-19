@@ -173,7 +173,8 @@ function limparItens(itens) {
       ? numero(it.laborUnitPrice)
       : null,
     laborPercent: numero(it && it.laborPercent),
-    empreitada: !!(it && it.empreitada)
+    empreitada: !!(it && it.empreitada),
+    comodo: texto(it && it.comodo, 60)
   }));
 }
 

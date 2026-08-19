@@ -45,15 +45,16 @@
       </div>
     </div>
 
-    <h2 class="section-title">Onde é a obra</h2>
-    <p class="hint-comodos">Escolha as divisões onde o trabalho vai ser feito.</p>
-    <div class="comodos" id="comodos"></div>
+    <h2 class="section-title">O que pretende fazer</h2>
+    <p class="hint-comodos">Escolha a divisão e o trabalho, e vá acrescentando à lista — pode juntar quantos quiser.</p>
+    <div class="field">
+      <label for="f-comodo">Divisão</label>
+      <select id="f-comodo"></select>
+    </div>
     <div class="field hidden" id="campo-outro-comodo">
-      <label for="f-outro-comodo">Qual?</label>
+      <label for="f-outro-comodo">Qual divisão?</label>
       <input id="f-outro-comodo" placeholder="Ex: despensa, sótão, garagem do prédio">
     </div>
-
-    <h2 class="section-title">O que pretende fazer</h2>
     <div class="field">
       <label>Tipo de trabalho</label>
       <select id="f-servico"></select>
@@ -175,50 +176,39 @@ function populateMaterial(){
     + `<option value="__custom__">Não sei / a definir na visita</option>`;
   document.getElementById('f-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
 }
-/* ---------------- cómodos ---------------- */
-// Divisões típicas de uma casa portuguesa. "Outro" abre um campo livre, para
-// ninguém ser obrigado a escolher uma etiqueta que não serve.
+/* ---------------- divisões ---------------- */
+// A divisão faz parte de cada trabalho, não do pedido inteiro: assim dá para
+// pedir pavimento na cozinha e pintura na casa de banho no mesmo pedido.
+// "Outro" abre um campo livre, para ninguém ficar preso à lista.
 const COMODOS = [
   'Sala', 'Cozinha', 'Quarto', 'Casa de banho', 'Corredor',
   'Hall de entrada', 'Escritório', 'Garagem', 'Varanda', 'Terraço',
   'Quintal / exterior', 'Telhado', 'Casa inteira', 'Outro'
 ];
-const comodosEscolhidos = new Set();
 
-function renderComodos(){
-  document.getElementById('comodos').innerHTML = COMODOS.map(c => {
-    const activo = comodosEscolhidos.has(c);
-    return '<button type="button" class="comodo' + (activo ? ' escolhido' : '') +
-      '" data-comodo="' + escapeHtml(c) + '" aria-pressed="' + activo + '">' +
-      escapeHtml(c) + '</button>';
-  }).join('');
-
-  document.querySelectorAll('[data-comodo]').forEach(b => {
-    b.addEventListener('click', () => {
-      const c = b.dataset.comodo;
-      if(comodosEscolhidos.has(c)) comodosEscolhidos.delete(c);
-      else comodosEscolhidos.add(c);
-
-      const temOutro = comodosEscolhidos.has('Outro');
-      document.getElementById('campo-outro-comodo').classList.toggle('hidden', !temOutro);
-      if(!temOutro) document.getElementById('f-outro-comodo').value = '';
-
-      renderComodos();
-      if(temOutro) document.getElementById('f-outro-comodo').focus();
-    });
-  });
+function popularComodos(){
+  const sel = document.getElementById('f-comodo');
+  sel.innerHTML = COMODOS.map(c =>
+    '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'
+  ).join('');
+  ajustarCampoOutro();
 }
 
-// O que segue no pedido: as etiquetas escolhidas, com "Outro" trocado pelo que
-// a pessoa escreveu à mão.
-function comodosDoPedido(){
-  const escrito = document.getElementById('f-outro-comodo').value.trim();
-  return [...comodosEscolhidos]
-    .map(c => c === 'Outro' ? escrito : c)
-    .filter(Boolean);
+function ajustarCampoOutro(){
+  const ehOutro = document.getElementById('f-comodo').value === 'Outro';
+  document.getElementById('campo-outro-comodo').classList.toggle('hidden', !ehOutro);
+  if(!ehOutro) document.getElementById('f-outro-comodo').value = '';
 }
 
-renderComodos();
+// A divisão que vai no item: o que está escolhido, ou o que foi escrito à mão.
+function comodoEscolhido(){
+  const sel = document.getElementById('f-comodo').value;
+  if(sel !== 'Outro') return sel;
+  return document.getElementById('f-outro-comodo').value.trim();
+}
+
+document.getElementById('f-comodo').addEventListener('change', ajustarCampoOutro);
+popularComodos();
 
 document.getElementById('f-servico').addEventListener('change', populateMaterial);
 
@@ -301,7 +291,8 @@ document.getElementById('btn-add-empreitada').addEventListener('click', ()=>{
     unitPrice: 0,
     laborUnitPrice: 0,
     laborPercent: 0,
-    empreitada: true
+    empreitada: true,
+    comodo: comodoEscolhido()
   });
   document.getElementById('f-empreitada').value = '';
   renderItems();
@@ -332,7 +323,8 @@ document.getElementById('btn-add-item').addEventListener('click', ()=>{
     unit: s ? s.unit : 'un',
     unitPrice: usingCustom ? num(selectedCustomMaterial.price) : (mat ? num(mat.price) : 0),
     laborUnitPrice: s ? num(s.laborPrice) : 0,
-    laborPercent: 0
+    laborPercent: 0,
+    comodo: comodoEscolhido()
   });
   document.getElementById('f-qty').value = '';
   selectedCustomMaterial = null;
@@ -347,16 +339,16 @@ function renderItems(){
     const hasQty = it.quantity && it.quantity > 0;
     return `<div class="item">
       <div class="item-info">
-        <div class="item-desc">${escapeHtml(it.desc)}</div>
+        <div class="item-desc">${it.comodo ? `<span class="etiqueta-comodo">${escapeHtml(it.comodo)}</span>` : ''}${escapeHtml(it.desc)}</div>
         <div class="item-sub">
           ${it.empreitada
             ? 'Empreitada · orçamentada na visita'
             : `${hasQty ? `${num(it.quantity)} ${escapeHtml(it.unit)}` : `<input type="number" min="0" step="0.01" placeholder="qtd ${escapeHtml(it.unit)}" data-qty-idx="${idx}" class="item-qty-input">`}
-               ${(it.unitPrice && hasQty) ? ` · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}` : (it.unitPrice ? '' : ' · preço a definir na visita')}`}
+               ${hasQty ? ` · material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}${it.unitPrice ? '' : ' · material a definir na visita'}` : ''}`}
         </div>
       </div>
       <div class="item-actions">
-        <div class="item-val money">${it.empreitada ? '—' : ((it.unitPrice && hasQty) ? fmt(c.total) : '—')}</div>
+        <div class="item-val money">${(!it.empreitada && c.total > 0) ? fmt(c.total) : '—'}</div>
         <button class="item-del" data-idx="${idx}">×</button>
       </div>
     </div>`;
@@ -423,7 +415,7 @@ document.getElementById('btn-enviar').addEventListener('click', async ()=>{
         // O texto livre da caixa da IA nunca era enviado: o cliente escrevia o
         // que queria, a IA lia, e depois aquilo perdia-se. É muitas vezes a
         // parte mais útil do pedido, por isso vai junto.
-        comodos: comodosDoPedido()
+        comodos: [...new Set(items.map(it => it.comodo).filter(Boolean))]
       })
     });
     if(!res.ok) throw new Error('falha ao enviar');
