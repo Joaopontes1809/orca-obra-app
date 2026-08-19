@@ -45,14 +45,15 @@
       </div>
     </div>
 
-    <h2 class="section-title">O que pretende fazer</h2>
-    <div class="ai-box card stack">
-      <label>Não sabe bem como preencher? Descreva por palavras suas</label>
-      <textarea id="ai-texto" placeholder="Ex: quero pintar a sala e o corredor, e trocar o piso da cozinha, tem uns 15m² a cozinha"></textarea>
-      <button type="button" class="btn btn-block" id="btn-ai-analisar">✦ Analisar com IA e preencher</button>
-      <p class="search-status" id="ai-status"></p>
+    <h2 class="section-title">Onde é a obra</h2>
+    <p class="hint-comodos">Escolha as divisões onde o trabalho vai ser feito.</p>
+    <div class="comodos" id="comodos"></div>
+    <div class="field hidden" id="campo-outro-comodo">
+      <label for="f-outro-comodo">Qual?</label>
+      <input id="f-outro-comodo" placeholder="Ex: despensa, sótão, garagem do prédio">
     </div>
 
+    <h2 class="section-title">O que pretende fazer</h2>
     <div class="field">
       <label>Tipo de trabalho</label>
       <select id="f-servico"></select>
@@ -174,54 +175,50 @@ function populateMaterial(){
     + `<option value="__custom__">Não sei / a definir na visita</option>`;
   document.getElementById('f-qty-label').textContent = `Quantidade (${s?s.unit:'un'})`;
 }
-document.getElementById('btn-ai-analisar').addEventListener('click', async ()=>{
-  const texto = document.getElementById('ai-texto').value.trim();
-  const statusEl = document.getElementById('ai-status');
-  if(!texto){ statusEl.textContent = 'Escreva o que pretende primeiro.'; return; }
-  const btn = document.getElementById('btn-ai-analisar');
-  btn.disabled = true;
-  statusEl.textContent = 'A analisar...';
+/* ---------------- cómodos ---------------- */
+// Divisões típicas de uma casa portuguesa. "Outro" abre um campo livre, para
+// ninguém ser obrigado a escolher uma etiqueta que não serve.
+const COMODOS = [
+  'Sala', 'Cozinha', 'Quarto', 'Casa de banho', 'Corredor',
+  'Hall de entrada', 'Escritório', 'Garagem', 'Varanda', 'Terraço',
+  'Quintal / exterior', 'Telhado', 'Casa inteira', 'Outro'
+];
+const comodosEscolhidos = new Set();
 
-  try{
-    const r = await fetch('/api/ai/parse-request', {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ texto, services: catalog.services })
+function renderComodos(){
+  document.getElementById('comodos').innerHTML = COMODOS.map(c => {
+    const activo = comodosEscolhidos.has(c);
+    return '<button type="button" class="comodo' + (activo ? ' escolhido' : '') +
+      '" data-comodo="' + escapeHtml(c) + '" aria-pressed="' + activo + '">' +
+      escapeHtml(c) + '</button>';
+  }).join('');
+
+  document.querySelectorAll('[data-comodo]').forEach(b => {
+    b.addEventListener('click', () => {
+      const c = b.dataset.comodo;
+      if(comodosEscolhidos.has(c)) comodosEscolhidos.delete(c);
+      else comodosEscolhidos.add(c);
+
+      const temOutro = comodosEscolhidos.has('Outro');
+      document.getElementById('campo-outro-comodo').classList.toggle('hidden', !temOutro);
+      if(!temOutro) document.getElementById('f-outro-comodo').value = '';
+
+      renderComodos();
+      if(temOutro) document.getElementById('f-outro-comodo').focus();
     });
-    const data = await r.json();
-    if(!r.ok) throw new Error(data.error||'erro');
+  });
+}
 
-    let added = 0;
-    (data.itens||[]).forEach(sug=>{
-      const s = catalog.services.find(sv=>sv.name.toLowerCase()===String(sug.servico||'').toLowerCase());
-      if(!s) return;
-      const matGuess = (sug.material||'').toLowerCase();
-      let mat = null;
-      if(matGuess){
-        mat = catalog.materials.find(m=>m.serviceId===s.id && (m.name.toLowerCase().includes(matGuess) || matGuess.includes(m.name.toLowerCase().split(' ')[0])));
-      }
-      items.push({
-        id: uid(), serviceId: s.id, materialId: mat ? mat.id : null,
-        desc: mat ? mat.name : (sug.material ? sug.material : s.name+' — a definir'),
-        quantity: sug.quantidade || 0,
-        unit: s.unit,
-        unitPrice: mat ? num(mat.price) : 0,
-        laborUnitPrice: mat ? num(mat.laborPrice) : null,
-        laborPercent: s.laborPercent
-      });
-      added++;
-    });
+// O que segue no pedido: as etiquetas escolhidas, com "Outro" trocado pelo que
+// a pessoa escreveu à mão.
+function comodosDoPedido(){
+  const escrito = document.getElementById('f-outro-comodo').value.trim();
+  return [...comodosEscolhidos]
+    .map(c => c === 'Outro' ? escrito : c)
+    .filter(Boolean);
+}
 
-    if(added===0){
-      statusEl.textContent = 'Não consegui identificar trabalhos no texto — pode adicionar manualmente abaixo.';
-    } else {
-      statusEl.textContent = `${added} trabalho(s) adicionado(s) — confira as quantidades e preços antes de enviar.`;
-      renderItems();
-    }
-  }catch(e){
-    statusEl.textContent = 'Não foi possível analisar agora. Pode preencher manualmente abaixo.';
-  }
-  btn.disabled = false;
-});
+renderComodos();
 
 document.getElementById('f-servico').addEventListener('change', populateMaterial);
 
@@ -334,8 +331,8 @@ document.getElementById('btn-add-item').addEventListener('click', ()=>{
     quantity: qty,
     unit: s ? s.unit : 'un',
     unitPrice: usingCustom ? num(selectedCustomMaterial.price) : (mat ? num(mat.price) : 0),
-    laborUnitPrice: (!usingCustom && mat) ? num(mat.laborPrice) : null,
-    laborPercent: s ? s.laborPercent : 0
+    laborUnitPrice: s ? num(s.laborPrice) : 0,
+    laborPercent: 0
   });
   document.getElementById('f-qty').value = '';
   selectedCustomMaterial = null;
@@ -426,7 +423,7 @@ document.getElementById('btn-enviar').addEventListener('click', async ()=>{
         // O texto livre da caixa da IA nunca era enviado: o cliente escrevia o
         // que queria, a IA lia, e depois aquilo perdia-se. É muitas vezes a
         // parte mais útil do pedido, por isso vai junto.
-        observacoes_cliente: document.getElementById('ai-texto').value.trim()
+        comodos: comodosDoPedido()
       })
     });
     if(!res.ok) throw new Error('falha ao enviar');

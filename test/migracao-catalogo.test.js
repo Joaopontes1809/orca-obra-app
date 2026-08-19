@@ -17,25 +17,46 @@ function poolCom(catalogo) {
   return { pool, estado };
 }
 
-test('converte a mao de obra dos catalogos antigos, e a conta nao muda', async () => {
-  const antigo = {
-    services: [{ id: 's-piso', name: 'Pavimento', laborPercent: 90, unit: 'm²' }],
-    materials: [{ id: 'm-porc', name: 'Porcelânico', serviceId: 's-piso', unit: 'm²', price: 15 }]
+test('a mao de obra dos materiais sobe para o servico, pela media', async () => {
+  // modelo intermedio: cada material tinha o seu valor de mao de obra
+  const catalogo = {
+    services: [{ id: 's-piso', name: 'Pavimento', unit: 'm²' }],
+    materials: [
+      { id: 'm-porc', serviceId: 's-piso', price: 15, laborPrice: 13.5 },
+      { id: 'm-ceram', serviceId: 's-piso', price: 8, laborPrice: 7.2 }
+    ]
   };
-  const { pool, estado } = poolCom(antigo);
+  const { pool, estado } = poolCom(catalogo);
 
   await initDb(pool);
   assert.ok(estado.guardado, 'esperava o catalogo ser gravado');
-  // 15 EUR/m2 a 90% da 13,50 EUR/m2 — quem ja usava nao ve o valor mudar
-  assert.strictEqual(estado.guardado.materials[0].laborPrice, 13.5);
+  // (13,50 + 7,20) / 2 = 10,35
+  assert.strictEqual(estado.guardado.services[0].laborPrice, 10.35);
+  // e os materiais deixam de a ter
+  estado.guardado.materials.forEach(m =>
+    assert.strictEqual(m.laborPrice, undefined, 'o material nao pode guardar mao de obra'));
+});
+
+test('sem valores nos materiais, usa a percentagem antiga do servico', async () => {
+  // modelo mais antigo ainda: percentagem no servico, nada nos materiais
+  const catalogo = {
+    services: [{ id: 's-piso', name: 'Pavimento', laborPercent: 90, unit: 'm²' }],
+    materials: [{ id: 'm-porc', serviceId: 's-piso', price: 20 }]
+  };
+  const { pool, estado } = poolCom(catalogo);
+
+  await initDb(pool);
+  // 90% de 20 = 18
+  assert.strictEqual(estado.guardado.services[0].laborPrice, 18);
+  assert.strictEqual(estado.guardado.services[0].laborPercent, undefined, 'a percentagem tem de sair');
 });
 
 test('a conversao nao se repete numa segunda passagem', async () => {
-  const antigo = {
+  const catalogo = {
     services: [{ id: 's-piso', laborPercent: 90 }],
-    materials: [{ id: 'm-porc', serviceId: 's-piso', price: 15 }]
+    materials: [{ id: 'm-porc', serviceId: 's-piso', price: 15, laborPrice: 13.5 }]
   };
-  const { pool, estado } = poolCom(antigo);
+  const { pool, estado } = poolCom(catalogo);
 
   await initDb(pool);
   assert.ok(estado.guardado, 'a primeira passagem devia gravar');
@@ -44,28 +65,28 @@ test('a conversao nao se repete numa segunda passagem', async () => {
   assert.strictEqual(estado.guardado, null, 'a segunda nao pode voltar a gravar');
 });
 
-test('nao mexe em materiais que ja tenham mao de obra', async () => {
+test('nao mexe em servicos que ja tenham o valor definido', async () => {
   const catalogo = {
-    services: [{ id: 's-piso', laborPercent: 90 }],
-    materials: [
-      { id: 'a', serviceId: 's-piso', price: 15, laborPrice: 22 },
-      { id: 'b', serviceId: 's-piso', price: 10 }
-    ]
+    services: [
+      { id: 'a', laborPrice: 25 },
+      { id: 'b', laborPercent: 50 }
+    ],
+    materials: [{ id: 'm', serviceId: 'b', price: 10 }]
   };
   const { pool, estado } = poolCom(catalogo);
   await initDb(pool);
-  assert.strictEqual(estado.guardado.materials[0].laborPrice, 22, 'o valor escrito a mao fica intacto');
-  assert.strictEqual(estado.guardado.materials[1].laborPrice, 9, 'o que faltava e preenchido');
+  assert.strictEqual(estado.guardado.services[0].laborPrice, 25, 'o valor escrito a mao fica intacto');
+  assert.strictEqual(estado.guardado.services[1].laborPrice, 5, '50% de 10');
 });
 
-test('aguenta um material sem servico correspondente', async () => {
+test('aguenta um servico sem materiais nenhuns', async () => {
   const catalogo = {
-    services: [],
-    materials: [{ id: 'orfao', serviceId: 's-que-nao-existe', price: 30 }]
+    services: [{ id: 'orfao', laborPercent: 80 }],
+    materials: []
   };
   const { pool, estado } = poolCom(catalogo);
   await initDb(pool);
-  assert.strictEqual(estado.guardado.materials[0].laborPrice, 0, 'sem servico, mao de obra fica a zero');
+  assert.strictEqual(estado.guardado.services[0].laborPrice, 0, 'sem materiais, fica a zero');
 });
 
 test('aguenta um catalogo vazio ou mal formado sem rebentar', async () => {

@@ -4,27 +4,28 @@ const auth = require('./auth');
 const seg = require('./seguranca');
 const { limitar } = require('./limites');
 
+// A mão de obra vive no serviço, em euros por unidade: assentar pavimento
+// custa o mesmo por m² seja qual for a cerâmica. O material só traz o seu
+// preço. Assim há um sítio só para cada número, e um material novo — vindo
+// da pesquisa de preços — já nasce com mão de obra correcta.
 const DEFAULT_CATALOG = {
   services: [
-    { id: 's-piso', name: 'Pavimento', laborPercent: 90, unit: 'm²' },
-    { id: 's-pintura', name: 'Pintura', laborPercent: 250, unit: 'm²' },
-    { id: 's-parede', name: 'Alvenaria / parede', laborPercent: 60, unit: 'm²' },
-    { id: 's-telhado', name: 'Telhado', laborPercent: 60, unit: 'm²' },
-    { id: 's-eletrica', name: 'Eletricidade', laborPercent: 80, unit: 'ponto' },
-    { id: 's-hidraulica', name: 'Canalização', laborPercent: 80, unit: 'ponto' },
-    { id: 's-outro', name: 'Outro / não sei especificar', laborPercent: 50, unit: 'un' }
+    { id: 's-piso', name: 'Pavimento', laborPrice: 12, unit: 'm²' },
+    { id: 's-pintura', name: 'Pintura', laborPrice: 7.5, unit: 'm²' },
+    { id: 's-parede', name: 'Alvenaria / parede', laborPrice: 15, unit: 'm²' },
+    { id: 's-telhado', name: 'Telhado', laborPrice: 12, unit: 'm²' },
+    { id: 's-eletrica', name: 'Eletricidade', laborPrice: 36, unit: 'ponto' },
+    { id: 's-hidraulica', name: 'Canalização', laborPrice: 48, unit: 'ponto' },
+    { id: 's-outro', name: 'Outro / não sei especificar', laborPrice: 0, unit: 'un' }
   ],
-  // price = material por unidade; laborPrice = mão de obra por unidade.
-  // Os valores de arranque saem da percentagem que o serviço tinha antes, para
-  // as contas não mudarem de um dia para o outro sem ninguém pedir.
   materials: [
-    { id: 'm-porc', name: 'Pavimento porcelânico padrão', serviceId: 's-piso', unit: 'm²', price: 15, laborPrice: 13.5 },
-    { id: 'm-ceram', name: 'Pavimento cerâmico económico', serviceId: 's-piso', unit: 'm²', price: 8, laborPrice: 7.2 },
-    { id: 'm-tinta-lat', name: 'Tinta acrílica interior (2 demãos)', serviceId: 's-pintura', unit: 'm²', price: 3, laborPrice: 7.5 },
-    { id: 'm-tijolo', name: 'Tijolo / bloco (m² de parede)', serviceId: 's-parede', unit: 'm²', price: 25, laborPrice: 15 },
-    { id: 'm-telha', name: 'Telha cerâmica', serviceId: 's-telhado', unit: 'm²', price: 20, laborPrice: 12 },
-    { id: 'm-ponto-el', name: 'Ponto elétrico completo', serviceId: 's-eletrica', unit: 'ponto', price: 45, laborPrice: 36 },
-    { id: 'm-ponto-hid', name: 'Ponto de canalização completo', serviceId: 's-hidraulica', unit: 'ponto', price: 60, laborPrice: 48 }
+    { id: 'm-porc', name: 'Pavimento porcelânico padrão', serviceId: 's-piso', unit: 'm²', price: 15 },
+    { id: 'm-ceram', name: 'Pavimento cerâmico económico', serviceId: 's-piso', unit: 'm²', price: 8 },
+    { id: 'm-tinta-lat', name: 'Tinta acrílica interior (2 demãos)', serviceId: 's-pintura', unit: 'm²', price: 3 },
+    { id: 'm-tijolo', name: 'Tijolo / bloco (m² de parede)', serviceId: 's-parede', unit: 'm²', price: 25 },
+    { id: 'm-telha', name: 'Telha cerâmica', serviceId: 's-telhado', unit: 'm²', price: 20 },
+    { id: 'm-ponto-el', name: 'Ponto elétrico completo', serviceId: 's-eletrica', unit: 'ponto', price: 45 },
+    { id: 'm-ponto-hid', name: 'Ponto de canalização completo', serviceId: 's-hidraulica', unit: 'ponto', price: 60 }
   ]
 };
 
@@ -57,6 +58,7 @@ async function initDb(pool) {
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS extras JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS pagamentos JSONB NOT NULL DEFAULT '[]';`);
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comodos JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS agenda (
       id         SERIAL PRIMARY KEY,
@@ -73,27 +75,49 @@ async function initDb(pool) {
   if (cat.rows.length === 0) {
     await pool.query("INSERT INTO config (key, value) VALUES ('catalogo', $1)", [DEFAULT_CATALOG]);
   } else {
-    // A mão de obra passou de percentagem no serviço a valor por unidade no
-    // material. Os catálogos criados antes disso não têm laborPrice, e sem
-    // preenchimento a mão de obra aparecia a zero em todos os orçamentos.
-    // Convertemos uma vez, a partir da percentagem que o serviço tinha, para
-    // as contas não mudarem. Só toca em materiais a que falte o campo.
+    // A mão de obra mudou duas vezes de sítio: era uma percentagem no serviço,
+    // passou a valor por unidade no material, e agora é valor por unidade no
+    // serviço. Esta conversão apanha os dois casos antigos e não inventa
+    // números — usa o que já lá estava.
     const catalogo = cat.rows[0].value || {};
     const servicos = catalogo.services || [];
     const materiais = catalogo.materials || [];
-    let convertidos = 0;
+    let mudou = false;
 
-    for (const m of materiais) {
-      if (m.laborPrice !== undefined && m.laborPrice !== null) continue;
-      const s = servicos.find(s => s.id === m.serviceId);
-      const percentagem = s && Number.isFinite(Number(s.laborPercent)) ? Number(s.laborPercent) : 0;
-      m.laborPrice = Math.round(Number(m.price || 0) * (percentagem / 100) * 100) / 100;
-      convertidos++;
+    for (const s of servicos) {
+      if (s.laborPrice !== undefined && s.laborPrice !== null) continue;
+
+      // 1º: a média do que os materiais deste serviço já cobravam
+      const doServico = materiais
+        .filter(m => m.serviceId === s.id && Number.isFinite(Number(m.laborPrice)))
+        .map(m => Number(m.laborPrice));
+
+      if (doServico.length) {
+        const media = doServico.reduce((a, b) => a + b, 0) / doServico.length;
+        s.laborPrice = Math.round(media * 100) / 100;
+      } else {
+        // 2º: sem materiais, aplica-se a percentagem antiga ao preço médio deles
+        const precos = materiais
+          .filter(m => m.serviceId === s.id && Number.isFinite(Number(m.price)))
+          .map(m => Number(m.price));
+        const precoMedio = precos.length ? precos.reduce((a, b) => a + b, 0) / precos.length : 0;
+        const pct = Number.isFinite(Number(s.laborPercent)) ? Number(s.laborPercent) : 0;
+        s.laborPrice = Math.round(precoMedio * (pct / 100) * 100) / 100;
+      }
+      delete s.laborPercent;
+      mudou = true;
     }
 
-    if (convertidos > 0) {
+    // a mão de obra sai dos materiais: passou a ser do serviço
+    for (const m of materiais) {
+      if (m.laborPrice === undefined) continue;
+      delete m.laborPrice;
+      mudou = true;
+    }
+
+    if (mudou) {
       await pool.query("UPDATE config SET value = $1 WHERE key = 'catalogo'", [catalogo]);
-      console.log(`Catálogo: mão de obra convertida em ${convertidos} material(ais).`);
+      console.log('Catálogo: mão de obra movida dos materiais para os serviços.');
     }
   }
   const emp = await pool.query("SELECT 1 FROM config WHERE key = 'empresa'");
@@ -117,6 +141,19 @@ function texto(v, limite) {
 function numero(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : 0;
+}
+
+const LIMITE_COMODOS = 20;
+
+// Os cómodos vêm do formulário público: uma lista de nomes, alguns escolhidos
+// de uma lista fixa e um deles escrito à mão. Mesmo tratamento que os itens.
+function limparComodos(comodos) {
+  if (!Array.isArray(comodos)) return [];
+  return comodos
+    .slice(0, LIMITE_COMODOS)
+    .map(c => texto(c, 60))
+    .filter(c => c && c.trim())
+    .map(c => c.trim());
 }
 
 function limparItens(itens) {
@@ -206,16 +243,17 @@ function createApp(pool) {
     mensagem: 'Demasiados pedidos enviados. Tente mais tarde.'
   }), async (req, res) => {
     try {
-      const { nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens } = req.body;
+      const { nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens, comodos } = req.body;
       if (!nome_cliente || !morada) {
         return res.status(400).json({ error: 'nome e morada são obrigatórios' });
       }
       const r = await pool.query(
-        `INSERT INTO pedidos (nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,'pendente') RETURNING *`,
+        `INSERT INTO pedidos (nome_cliente, telefone, morada, tipo_servico, descricao, quantidade, unidade, observacoes_cliente, itens, comodos, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'pendente') RETURNING *`,
         [texto(nome_cliente, 120), texto(telefone, 40), texto(morada, 200), texto(tipo_servico, 200),
          texto(descricao, 2000), quantidade == null ? null : numero(quantidade), texto(unidade, 20),
-         texto(observacoes_cliente, 2000), JSON.stringify(limparItens(itens))]
+         texto(observacoes_cliente, 2000), JSON.stringify(limparItens(itens)),
+         JSON.stringify(limparComodos(comodos))]
       );
       res.json(r.rows[0]);
     } catch (e) {

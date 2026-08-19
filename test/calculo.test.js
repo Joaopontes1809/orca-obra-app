@@ -63,10 +63,14 @@ test('calcTotals soma material e mao de obra em separado', () => {
   assert.strictEqual(t.total, t.material + t.labor);
 });
 
-test('o catalogo por omissao traz mao de obra em todos os materiais', () => {
+test('a mao de obra vive no servico, nao no material', () => {
+  for (const s of DEFAULT_CATALOG.services) {
+    assert.ok(typeof s.laborPrice === 'number', s.name + ' devia ter laborPrice');
+    assert.strictEqual(s.laborPercent, undefined, s.name + ' nao deve guardar percentagem');
+  }
   for (const m of DEFAULT_CATALOG.materials) {
-    assert.ok(typeof m.laborPrice === 'number' && m.laborPrice > 0,
-      m.name + ' devia ter laborPrice');
+    assert.strictEqual(m.laborPrice, undefined, m.name + ' nao deve ter mao de obra propria');
+    assert.ok(typeof m.price === 'number', m.name + ' devia ter preco');
   }
 });
 
