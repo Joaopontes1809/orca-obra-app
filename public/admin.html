@@ -289,6 +289,33 @@
   </div>
 </div>
 
+<!-- Modal Despesa -->
+<div class="overlay" id="despesa-overlay">
+  <div class="modal">
+    <h2>Registar despesa</h2>
+    <p class="dim" id="dp-saldo"></p>
+    <div class="field">
+      <label for="dp-nome">Em quê</label>
+      <input id="dp-nome" placeholder="Ex: tinta, aluguer da betoneira, combustível">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="dp-valor">Valor gasto (€)</label>
+        <input id="dp-valor" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0,00">
+      </div>
+      <div class="field">
+        <label for="dp-data">Data</label>
+        <input id="dp-data" type="date">
+      </div>
+    </div>
+    <p class="error" id="dp-erro">Escreva em quê e um valor maior que zero.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="dp-cancelar">Cancelar</button>
+      <button class="btn btn-primary" id="dp-confirmar">Registar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Modal Custo extra -->
 <div class="overlay" id="pagamento-overlay">
   <div class="modal">
@@ -590,6 +617,19 @@ function calcExtras(p){
 function calcPago(p){
   const pagamentos = (p && p.pagamentos) || [];
   return pagamentos.reduce((s,x)=> s + (parseFloat(x.valor)||0), 0);
+}
+
+// O que já gastámos do nosso nesta obra.
+function calcDespesas(p){
+  const despesas = (p && p.despesas) || [];
+  return despesas.reduce((s,d)=> s + (parseFloat(d.valor)||0), 0);
+}
+
+// O dinheiro que está mesmo na mão: o que o cliente entregou menos o que já
+// gastámos. Fica negativo enquanto se gasta antes de receber — é isso que
+// queremos ver.
+function calcNaMao(p){
+  return calcPago(p) - calcDespesas(p);
 }
 
 // O que falta receber. Nunca abaixo de zero: se pagaram a mais, isso e um
@@ -1015,6 +1055,11 @@ function openConfirmedDetail(id){
     <div id="ed-pagamentos"></div>
     <button class="btn btn-block mt-2" id="ed-add-pagamento">+ Registar pagamento</button>
 
+    <h2 class="section">Despesas</h2>
+    <p class="hint">O que já saiu do seu bolso nesta obra. Não entra no que o cliente paga — desconta do dinheiro que já recebeu.</p>
+    <div id="ed-despesas"></div>
+    <button class="btn btn-block mt-2" id="ed-add-despesa">+ Registar despesa</button>
+
     <div class="total-box">
       <div class="line"><span>Material (itens)</span><span class="num" id="ed-tot-material">${fmt(t.material)}</span></div>
       <div class="line"><span>Mão de obra (itens)</span><span class="num" id="ed-tot-mao">${fmt(t.labor)}</span></div>
@@ -1022,6 +1067,8 @@ function openConfirmedDetail(id){
       <div class="final"><span class="lbl">Total</span><span class="num amt" id="ed-tot-final">${fmt(t.total + calcExtras(p))}</span></div>
       <div class="line line-pago"><span>Já pago</span><span class="num" id="ed-tot-pago">${fmt(calcPago(p))}</span></div>
       <div class="final final-falta"><span class="lbl">Falta receber</span><span class="num amt" id="ed-tot-falta">${fmt(t.total + calcExtras(p) - calcPago(p))}</span></div>
+      <div class="line line-despesa"><span>Despesas</span><span class="num" id="ed-tot-despesas">${fmt(calcDespesas(p))}</span></div>
+      <div class="final final-mao"><span class="lbl">Na mão</span><span class="num amt ${calcNaMao(p) < 0 ? 'negativo' : ''}" id="ed-tot-mao-cheia">${fmt(calcNaMao(p))}</span></div>
     </div>
 
     <h2 class="section">Contrato</h2>
@@ -1040,6 +1087,7 @@ function openConfirmedDetail(id){
   renderEditItems();
   renderEditExtras();
   renderEditPagamentos();
+  renderEditDespesas();
   renderEditContrato(p);
 
   container.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
@@ -1088,6 +1136,7 @@ function openConfirmedDetail(id){
   container.querySelector('#ed-add-item').addEventListener('click', ()=>openItemModal());
   container.querySelector('#ed-add-extra').addEventListener('click', ()=>openCustoModal());
   container.querySelector('#ed-add-pagamento').addEventListener('click', ()=>abrirPagamentoModal());
+  container.querySelector('#ed-add-despesa').addEventListener('click', ()=>abrirDespesaModal());
   container.querySelector('#ed-close').addEventListener('click', ()=>{
     fecharDetalhe();
     if(p.id == null){ pedidos = pedidos.filter(x=>x!==p); }
@@ -1155,7 +1204,8 @@ function openConfirmedDetail(id){
         observacoes_internas: document.getElementById('ed-obs').value.trim(),
         itens: draftItems,
         extras: p.extras || [],
-        pagamentos: p.pagamentos || []
+        pagamentos: p.pagamentos || [],
+        despesas: p.despesas || []
       };
       let updated;
       if(p.id == null){
@@ -1199,6 +1249,81 @@ document.getElementById('cx-confirmar').addEventListener('click', ()=>{
   renderEditPagamentos();
   updateEditTotals();
   showToast('Custo adicionado');
+});
+
+/* ---------------- despesas ---------------- */
+function renderEditDespesas(){
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p) return;
+  const despesas = p.despesas || [];
+  const el = document.getElementById('ed-despesas');
+  if(!el) return;
+
+  if(despesas.length===0){
+    el.innerHTML = `<p class="hint">Ainda não há despesas registadas.</p>`;
+    return;
+  }
+
+  el.innerHTML = despesas.map((d, idx)=>`
+    <div class="item-row">
+      <div>
+        <div class="desc">${escapeHtml(d.nome || 'Despesa')}</div>
+        <div class="sub">${fmtDate(d.data)}</div>
+      </div>
+      <div class="row-inline">
+        <div class="val num">− ${fmt(parseFloat(d.valor)||0)}</div>
+        <button class="del" data-desp-idx="${idx}">×</button>
+      </div>
+    </div>
+  `).join('');
+
+  el.querySelectorAll('[data-desp-idx]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      const p2 = pedidos.find(x=>x.id===editingPedidoId);
+      p2.despesas.splice(parseInt(b.dataset.despIdx), 1);
+      renderEditDespesas();
+      updateEditTotals();
+    });
+  });
+}
+
+/* ---------------- modal de despesa ---------------- */
+const despesaOverlay = document.getElementById('despesa-overlay');
+
+function abrirDespesaModal(){
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p) return;
+  const naMao = calcNaMao(p);
+  document.getElementById('dp-saldo').textContent = naMao < 0
+    ? `Neste momento está ${fmt(naMao)} — gastou mais do que recebeu.`
+    : `Tem ${fmt(naMao)} na mão desta obra.`;
+  document.getElementById('dp-nome').value = '';
+  document.getElementById('dp-valor').value = '';
+  document.getElementById('dp-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('dp-erro').hidden = true;
+  despesaOverlay.classList.add('open');
+}
+
+document.getElementById('dp-cancelar').addEventListener('click', ()=>despesaOverlay.classList.remove('open'));
+document.getElementById('dp-confirmar').addEventListener('click', ()=>{
+  const nome = document.getElementById('dp-nome').value.trim();
+  const valor = parseFloat(document.getElementById('dp-valor').value);
+  if(!nome || isNaN(valor) || valor <= 0){
+    document.getElementById('dp-erro').hidden = false;
+    return;
+  }
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  if(!p.despesas) p.despesas = [];
+  p.despesas.push({
+    id: uid(),
+    nome,
+    valor,
+    data: document.getElementById('dp-data').value || new Date().toISOString().slice(0,10)
+  });
+  despesaOverlay.classList.remove('open');
+  renderEditDespesas();
+  updateEditTotals();
+  showToast('Despesa registada');
 });
 
 /* ---------------- modal de pagamento ---------------- */
@@ -1290,6 +1415,13 @@ function updateEditTotals(){
   const pago = calcPago(p);
   document.getElementById('ed-tot-pago').textContent = fmt(pago);
   document.getElementById('ed-tot-falta').textContent = fmt(Math.max(0, t.total + extraTotal - pago));
+
+  const despesas = calcDespesas(p);
+  const naMao = pago - despesas;
+  document.getElementById('ed-tot-despesas').textContent = fmt(despesas);
+  const elNaMao = document.getElementById('ed-tot-mao-cheia');
+  elNaMao.textContent = fmt(naMao);
+  elNaMao.classList.toggle('negativo', naMao < 0);
 }
 
 /* ---------------- custos extras (materiais novos, ajudantes...) ---------------- */
@@ -1984,12 +2116,16 @@ function renderStats(){
   const extrasPorTipoEntries = Object.entries(extrasPorTipo).sort((a,b)=>b[1]-a[1]);
 
   // dinheiro: o que já entrou, o que falta, e quanto disso é de obras feitas
-  let totalPago = 0, totalFalta = 0, faturadoObrasFeitas = 0;
+  let totalPago = 0, totalFalta = 0, faturadoObrasFeitas = 0, totalDespesas = 0;
   confirmados.forEach(p=>{
     totalPago += calcPago(p);
     totalFalta += calcFalta(p);
+    totalDespesas += calcDespesas(p);
     if(estaConcluida(p)) faturadoObrasFeitas += calcTotals(p.itens).total + calcExtras(p);
   });
+  // o que sobra do que já entrou, depois de pagas as despesas; negativo
+  // enquanto se gasta antes de receber
+  const naMaoTotal = totalPago - totalDespesas;
 
   if(total===0){
     el.innerHTML = `<div class="empty">
@@ -2009,6 +2145,8 @@ function renderStats(){
       <div class="stat stat-pago"><div class="v money">${fmt(totalPago)}</div><div class="k">Já pago</div></div>
       <div class="stat stat-falta"><div class="v money">${fmt(totalFalta)}</div><div class="k">Falta receber</div></div>
       <div class="stat stat-wide"><div class="v money">${fmt(faturadoObrasFeitas)}</div><div class="k">Valor das obras já feitas</div></div>
+      <div class="stat stat-despesa"><div class="v money">${fmt(totalDespesas)}</div><div class="k">Despesas pagas por si</div></div>
+      <div class="stat stat-mao"><div class="v money ${naMaoTotal < 0 ? 'negativo' : ''}">${fmt(naMaoTotal)}</div><div class="k">Na mão (recebido − despesas)</div></div>
       <div class="stat"><div class="v money">${fmt(totalExtras)}</div><div class="k">Gastos em custos adicionais</div></div>
       <div class="stat"><div class="v">${orcamentosComExtras}</div><div class="k">Orçamentos com custos extra</div></div>
       <div class="stat stat-wide">
@@ -2016,6 +2154,7 @@ function renderStats(){
           <div class="stat-row"><span>Material (itens)</span><span class="money">${fmt(totalMaterial)}</span></div>
           <div class="stat-row"><span>Mão de obra (itens)</span><span class="money">${fmt(totalMao)}</span></div>
           <div class="stat-row"><span>Custos adicionais</span><span class="money">${fmt(totalExtras)}</span></div>
+          <div class="stat-row"><span>Despesas pagas por si</span><span class="money">${fmt(totalDespesas)}</span></div>
         </div>
       </div>
       ${extrasPorTipoEntries.length ? `

@@ -61,6 +61,10 @@ async function initDb(pool) {
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS pagamentos JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comodos JSONB NOT NULL DEFAULT '[]';`);
+  // Despesas: dinheiro nosso já gasto na obra. Não é o mesmo que os custos
+  // adicionais — esses acrescentam ao que o cliente paga; estas saem do que
+  // já recebemos.
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS despesas JSONB NOT NULL DEFAULT '[]';`);
   // O contrato vive no pedido: um código que dá acesso à página pública, e o
   // que foi assinado. Guardamos o texto e os valores tal como estavam no
   // momento da assinatura — o orçamento pode mudar depois, o contrato não.
@@ -297,14 +301,15 @@ function createApp(pool) {
   app.patch('/api/pedidos/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const allowed = ['nome_cliente', 'telefone', 'morada', 'tipo_servico', 'descricao', 'quantidade', 'unidade', 'status', 'nome_orcamento', 'observacoes_internas', 'itens', 'extras', 'pagamentos'];
+      const allowed = ['nome_cliente', 'telefone', 'morada', 'tipo_servico', 'descricao', 'quantidade', 'unidade', 'status', 'nome_orcamento', 'observacoes_internas', 'itens', 'extras', 'pagamentos', 'despesas'];
       const fields = [];
       const values = [];
       let i = 1;
       for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(req.body, key)) {
           fields.push(`${key} = $${i}`);
-          values.push(key === 'itens' || key === 'extras' || key === 'pagamentos' ? JSON.stringify(req.body[key]) : req.body[key]);
+          const ehLista = key === 'itens' || key === 'extras' || key === 'pagamentos' || key === 'despesas';
+          values.push(ehLista ? JSON.stringify(req.body[key]) : req.body[key]);
           i++;
         }
       }
