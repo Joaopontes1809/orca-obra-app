@@ -249,6 +249,14 @@ async function carregar(){
 }
 
 carregar();
+
+// Guardar a app no aparelho: na próxima vez abre de imediato, mesmo com o
+// servidor adormecido.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>

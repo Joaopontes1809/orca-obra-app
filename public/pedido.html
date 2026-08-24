@@ -15,6 +15,14 @@
 <link rel="stylesheet" href="/css/pedido.css">
 </head>
 <body>
+
+<div class="ecra-espera" id="ecra-espera" hidden>
+  <img src="/icons/icon-192.png" alt="">
+  <h1>Krona</h1>
+  <p class="dim" id="espera-texto">A ligar ao servidor…</p>
+  <div class="barra-espera"><span></span></div>
+</div>
+
 <div class="wrap">
   <div class="top">
     <img src="/icons/icon-192.png" alt="">
@@ -132,9 +140,41 @@
 let catalog = { services: [], materials: [] };
 let items = [];
 
+/* ---------------- espera pelo servidor ---------------- */
+// O alojamento adormece quando ninguém usa a app e demora até cerca de um
+// minuto a acordar. Em vez da página de espera do alojamento, que não é nossa,
+// mostramos a nossa e vamos tentando até responder.
+function mostrarEspera(texto){
+  const el = document.getElementById('ecra-espera');
+  if(!el) return;
+  if(texto) document.getElementById('espera-texto').textContent = texto;
+  el.hidden = false;
+}
+
+function esconderEspera(){
+  const el = document.getElementById('ecra-espera');
+  if(el) el.hidden = true;
+}
+
+// Tenta o pedido várias vezes. Devolve a resposta ou null se desistir.
+async function tentarAteResponder(caminho, tentativas = 20, esperaMs = 3000){
+  for(let i = 0; i < tentativas; i++){
+    try{
+      const r = await fetch(caminho);
+      if(r.ok) return r;
+    }catch(e){ /* servidor ainda a acordar */ }
+    if(i === 1) mostrarEspera('A acordar o servidor… pode demorar até um minuto.');
+    if(i < tentativas - 1) await new Promise(r => setTimeout(r, esperaMs));
+  }
+  return null;
+}
+
 async function load(){
+  mostrarEspera();
+  const r = await tentarAteResponder('/api/config');
+  esconderEspera();
   try{
-    const r = await fetch('/api/config');
+    if(!r) throw new Error('sem resposta');
     const cfg = await r.json();
     catalog = cfg.catalogo || { services: [], materials: [] };
     document.getElementById('empresa-nome').textContent = (cfg.empresa && cfg.empresa.nome) || 'Krona';
@@ -430,6 +470,14 @@ document.getElementById('btn-enviar').addEventListener('click', async ()=>{
 });
 
 load();
+
+// Guardar a app no aparelho: na próxima vez abre de imediato, mesmo com o
+// servidor adormecido.
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('/sw.js').catch(()=>{});
+  });
+}
 </script>
 </body>
 </html>

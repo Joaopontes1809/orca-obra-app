@@ -20,6 +20,7 @@ function politica(nonce) {
     `font-src 'self' ${FONTES_FICHEIROS}`,
     "img-src 'self' data:",
     "connect-src 'self'",
+    "worker-src 'self'",
     "form-action 'self'",
     "base-uri 'self'",
     "object-src 'none'",
