@@ -3,6 +3,8 @@ const path = require('path');
 const auth = require('./auth');
 const seg = require('./seguranca');
 const { limitar } = require('./limites');
+const contrato = require('./contrato');
+const { CONTRATO_MODELO } = require('./contrato-modelo');
 
 // A mão de obra vive no serviço, em euros por unidade: assentar pavimento
 // custa o mesmo por m² seja qual for a cerâmica. O material só traz o seu
@@ -59,6 +61,12 @@ async function initDb(pool) {
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS concluido_em TIMESTAMPTZ;`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS pagamentos JSONB NOT NULL DEFAULT '[]';`);
   await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS comodos JSONB NOT NULL DEFAULT '[]';`);
+  // O contrato vive no pedido: um código que dá acesso à página pública, e o
+  // que foi assinado. Guardamos o texto e os valores tal como estavam no
+  // momento da assinatura — o orçamento pode mudar depois, o contrato não.
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS contrato_token TEXT;`);
+  await pool.query(`ALTER TABLE pedidos ADD COLUMN IF NOT EXISTS contrato JSONB;`);
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS pedidos_contrato_token ON pedidos (contrato_token) WHERE contrato_token IS NOT NULL;`);
   await pool.query(`
     CREATE TABLE IF NOT EXISTS agenda (
       id         SERIAL PRIMARY KEY,
@@ -119,6 +127,10 @@ async function initDb(pool) {
       await pool.query("UPDATE config SET value = $1 WHERE key = 'catalogo'", [catalogo]);
       console.log('Catálogo: mão de obra movida dos materiais para os serviços.');
     }
+  }
+  const ctr = await pool.query("SELECT 1 FROM config WHERE key = 'contrato'");
+  if (ctr.rows.length === 0) {
+    await pool.query("INSERT INTO config (key, value) VALUES ('contrato', $1)", [CONTRATO_MODELO]);
   }
   const emp = await pool.query("SELECT 1 FROM config WHERE key = 'empresa'");
   if (emp.rows.length === 0) {
@@ -197,6 +209,9 @@ function createApp(pool) {
 
   auth.registarRotas(app);
   app.use(auth.exigirSessao);
+  // Depois do guarda: criar o contrato exige sessão, e só as rotas
+  // /api/contrato/* é que a auth deixa passar sem ela.
+  contrato.registarRotas(app, pool, limitar);
 
   /* ---------------- config ---------------- */
   app.get('/api/config', async (req, res) => {
@@ -395,6 +410,7 @@ function createApp(pool) {
   });
 
   app.get('/pedido', seg.servirPagina('pedido.html'));
+  app.get('/contrato/:token', seg.servirPagina('contrato.html'));
   app.get('/', seg.servirPagina('admin.html'));
 
   /* ---------------- IA (Google Gemini — camada gratuita) ---------------- */

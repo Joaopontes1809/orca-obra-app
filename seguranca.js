@@ -57,13 +57,14 @@ function servirPagina(ficheiro) {
   };
 }
 
-// O express.static serviria /admin.html e /pedido.html sem nonce, e aí os
-// scripts seriam bloqueados e a página aparecia vazia. Fechamos esses dois
-// caminhos directos.
+// O express.static serviria estas páginas sem nonce, e aí os scripts seriam
+// bloqueados e a página aparecia vazia. Fechamos esses caminhos directos.
+// O contrato só existe com um código, por isso não tem para onde redirigir:
+// devolve 404.
 function bloquearPaginasCruas(req, res, next) {
-  if (req.path === '/admin.html' || req.path === '/pedido.html') {
-    return res.redirect(301, req.path === '/admin.html' ? '/' : '/pedido');
-  }
+  if (req.path === '/admin.html') return res.redirect(301, '/');
+  if (req.path === '/pedido.html') return res.redirect(301, '/pedido');
+  if (req.path === '/contrato.html') return res.status(404).send('Não encontrado.');
   next();
 }
 

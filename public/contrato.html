@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Contrato</title>
+<meta name="theme-color" content="#F8FAFC">
+<link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/tokens.css">
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/contrato.css">
+</head>
+<body>
+
+<div class="folha" id="folha">
+  <p class="a-carregar" id="a-carregar">A carregar o contrato…</p>
+</div>
+
+<script src="/js/shared.js"></script>
+<script>
+const token = location.pathname.split('/').filter(Boolean).pop();
+let dados = null;
+
+function euros(n){ return fmt(num(n)); }
+
+function totais(itens){
+  return calcTotals(itens || []);
+}
+
+// Substitui os campos entre chavetas pelos dados reais do orçamento.
+function preencher(texto, d){
+  const t = totais(d.itens);
+  const trabalhos = (d.itens || []).map(it => {
+    const c = calcItem(it);
+    const onde = it.comodo ? it.comodo + ' — ' : '';
+    const medida = medidaDe(it);
+    const valor = c.total > 0 ? euros(c.total) : 'valor a acordar';
+    return `• ${onde}${it.desc} (${medida}) — ${valor}`;
+  }).join('\n') || '• (sem trabalhos indicados)';
+
+  return String(texto || '')
+    .replaceAll('{{empresa}}', d.empresa)
+    .replaceAll('{{cliente}}', d.cliente || '______')
+    .replaceAll('{{morada}}', d.morada || '______')
+    .replaceAll('{{telefone}}', d.telefone || '______')
+    .replaceAll('{{total}}', euros(t.total))
+    .replaceAll('{{material}}', euros(t.material))
+    .replaceAll('{{maoDeObra}}', euros(t.labor))
+    .replaceAll('{{trabalhos}}', trabalhos)
+    .replaceAll('{{data}}', new Date().toLocaleDateString('pt-PT'));
+}
+
+// Numa empreitada nao ha medicao: a quantidade e sempre 1 e a unidade vazia,
+// e escrever "1" ali so confundia quem le.
+function medidaDe(it){
+  if(it.empreitada) return 'empreitada';
+  const q = num(it.quantity);
+  const unidade = it.unit || '';
+  if(!unidade) return q === 1 ? 'trabalho completo' : String(q);
+  return `${q} ${unidade}`;
+}
+
+function paragrafos(texto){
+  return String(texto || '').split('\n').map(l =>
+    l.trim() ? `<p>${escapeHtml(l)}</p>` : ''
+  ).join('');
+}
+
+function desenhar(){
+  const d = dados;
+  const m = d.modelo || {};
+  const t = totais(d.itens);
+  const assinado = d.assinado && d.contrato;
+
+  document.getElementById('folha').innerHTML = `
+    <header class="cabecalho">
+      <img src="/icons/icon-192.png" alt="">
+      <div>
+        <h1>${escapeHtml(m.titulo || 'Contrato de empreitada')}</h1>
+        <p class="dim">${escapeHtml(d.empresa)}${d.nomeOrcamento ? ' · ' + escapeHtml(d.nomeOrcamento) : ''}</p>
+      </div>
+    </header>
+
+    <section class="partes">
+      <div><span class="rotulo">Cliente</span><span>${escapeHtml(d.cliente) || '—'}</span></div>
+      <div><span class="rotulo">Morada da obra</span><span>${escapeHtml(d.morada) || '—'}</span></div>
+      <div><span class="rotulo">Telefone</span><span>${escapeHtml(d.telefone) || '—'}</span></div>
+    </section>
+
+    <section class="trabalhos">
+      <h2>Trabalhos</h2>
+      <div class="tabela-scroll"><table>
+        <thead><tr><th>Divisão</th><th>Trabalho</th><th>Medida</th><th class="dir">Valor</th></tr></thead>
+        <tbody>
+          ${(d.itens || []).map(it => {
+            const c = calcItem(it);
+            return `<tr>
+              <td>${escapeHtml(it.comodo || '—')}</td>
+              <td>${escapeHtml(it.desc || '')}</td>
+              <td>${escapeHtml(medidaDe(it))}</td>
+              <td class="dir">${c.total > 0 ? euros(c.total) : 'a acordar'}</td>
+            </tr>`;
+          }).join('') || '<tr><td colspan="4">Sem trabalhos indicados.</td></tr>'}
+        </tbody>
+      </table></div>
+      <div class="totais">
+        <div><span>Material</span><span>${euros(t.material)}</span></div>
+        <div><span>Mão de obra</span><span>${euros(t.labor)}</span></div>
+        <div class="grande"><span>Total</span><span>${euros(t.total)}</span></div>
+        <p class="dim">Valores sem IVA. A taxa aplicável é a que resultar da lei à data da fatura.</p>
+      </div>
+    </section>
+
+    ${m.intro ? `<section class="texto">${paragrafos(preencher(m.intro, d))}</section>` : ''}
+
+    ${(m.clausulas || []).map((cl, i) => `
+      <section class="clausula">
+        <h3>${i + 1}. ${escapeHtml(cl.titulo)}</h3>
+        ${paragrafos(preencher(cl.texto, d))}
+      </section>
+    `).join('')}
+
+    ${m.aceitacao ? `<section class="texto aceitacao">${paragrafos(preencher(m.aceitacao, d))}</section>` : ''}
+
+    ${assinado ? `
+      <section class="assinado">
+        <h3>Assinado</h3>
+        <img class="rubrica" src="${escapeHtml(d.contrato.assinatura)}" alt="Assinatura">
+        <p><strong>${escapeHtml(d.contrato.nome)}</strong></p>
+        <p class="dim">Assinado em ${new Date(d.contrato.assinadoEm).toLocaleString('pt-PT')}</p>
+      </section>
+      <div class="accoes nao-imprimir">
+        <button class="btn btn-primary" id="btn-imprimir">Imprimir / guardar em PDF</button>
+      </div>
+    ` : `
+      <section class="assinatura nao-imprimir">
+        <h3>Assinatura do cliente</h3>
+        <p class="dim">Assine com o dedo ou com o rato, dentro do quadro.</p>
+        <canvas id="quadro" width="600" height="200" aria-label="Quadro para assinar"></canvas>
+        <div class="linha-botoes">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-limpar">Limpar</button>
+        </div>
+        <div class="field">
+          <label for="nome-assinante">Nome de quem assina</label>
+          <input id="nome-assinante" value="${escapeHtml(d.cliente || '')}" placeholder="Nome completo">
+        </div>
+        <p class="erro" id="erro" hidden></p>
+        <button class="btn btn-primary btn-block" id="btn-assinar">Aceitar e assinar</button>
+        <p class="dim aviso-legal">Ao assinar declara que leu e aceita as condições acima. Esta é uma assinatura eletrónica simples.</p>
+      </section>
+    `}
+  `;
+
+  if (assinado) {
+    document.getElementById('btn-imprimir').addEventListener('click', () => window.print());
+  } else {
+    prepararQuadro();
+    document.getElementById('btn-assinar').addEventListener('click', assinar);
+    document.getElementById('btn-limpar').addEventListener('click', limparQuadro);
+  }
+}
+
+/* ---------------- quadro de assinatura ---------------- */
+let quadro, pincel, aDesenhar = false, temTraco = false;
+
+function prepararQuadro(){
+  quadro = document.getElementById('quadro');
+  // O canvas tem de ter a resolução do ecrã, senão a assinatura sai borrada
+  // nos telemóveis, que é justamente onde vai ser usada.
+  const escala = window.devicePixelRatio || 1;
+  const largura = quadro.clientWidth || 600;
+  quadro.width = largura * escala;
+  quadro.height = 200 * escala;
+  pincel = quadro.getContext('2d');
+  pincel.scale(escala, escala);
+  pincel.lineWidth = 2;
+  pincel.lineCap = 'round';
+  pincel.lineJoin = 'round';
+  pincel.strokeStyle = '#0F172A';
+
+  const ponto = e => {
+    const r = quadro.getBoundingClientRect();
+    const fonte = e.touches ? e.touches[0] : e;
+    return { x: fonte.clientX - r.left, y: fonte.clientY - r.top };
+  };
+  const comecar = e => { e.preventDefault(); aDesenhar = true; const p = ponto(e); pincel.beginPath(); pincel.moveTo(p.x, p.y); };
+  const mover = e => { if(!aDesenhar) return; e.preventDefault(); const p = ponto(e); pincel.lineTo(p.x, p.y); pincel.stroke(); temTraco = true; };
+  const parar = () => { aDesenhar = false; };
+
+  quadro.addEventListener('mousedown', comecar);
+  quadro.addEventListener('mousemove', mover);
+  window.addEventListener('mouseup', parar);
+  quadro.addEventListener('touchstart', comecar, { passive: false });
+  quadro.addEventListener('touchmove', mover, { passive: false });
+  quadro.addEventListener('touchend', parar);
+}
+
+function limparQuadro(){
+  pincel.clearRect(0, 0, quadro.width, quadro.height);
+  temTraco = false;
+}
+
+async function assinar(){
+  const erro = document.getElementById('erro');
+  const nome = document.getElementById('nome-assinante').value.trim();
+  const botao = document.getElementById('btn-assinar');
+
+  const mostrarErro = m => { erro.textContent = m; erro.hidden = false; };
+  erro.hidden = true;
+
+  if(!nome){ mostrarErro('Escreva o nome de quem assina.'); return; }
+  if(!temTraco){ mostrarErro('Assine dentro do quadro antes de continuar.'); return; }
+
+  botao.disabled = true;
+  try{
+    const r = await fetch('/api/contrato/' + encodeURIComponent(token) + '/assinar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nome, assinatura: quadro.toDataURL('image/png') })
+    });
+    const resposta = await r.json();
+    if(!r.ok){ mostrarErro(resposta.error || 'Não foi possível assinar.'); botao.disabled = false; return; }
+    await carregar();
+  }catch(e){
+    mostrarErro('Sem ligação. Verifique a internet e tente outra vez.');
+    botao.disabled = false;
+  }
+}
+
+async function carregar(){
+  try{
+    const r = await fetch('/api/contrato/' + encodeURIComponent(token));
+    if(r.status === 404){
+      document.getElementById('folha').innerHTML =
+        '<div class="empty"><h2>Contrato não encontrado</h2><p>O link pode estar errado ou ter sido substituído. Peça um novo à empresa.</p></div>';
+      return;
+    }
+    if(!r.ok) throw new Error('erro');
+    dados = await r.json();
+    desenhar();
+  }catch(e){
+    document.getElementById('folha').innerHTML =
+      '<div class="empty"><h2>Não foi possível carregar</h2><p>Verifique a ligação à internet e recarregue a página.</p></div>';
+  }
+}
+
+carregar();
+</script>
+</body>
+</html>

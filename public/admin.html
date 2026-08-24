@@ -97,6 +97,13 @@
         <button class="btn btn-primary btn-sm" id="btn-add-material">+ Novo material</button>
       </div>
       <div id="cat-materials"></div>
+
+      <div class="section-head">
+        <h2 class="section">Modelo do contrato</h2>
+        <button class="btn btn-primary btn-sm" id="btn-guardar-contrato">Guardar modelo</button>
+      </div>
+      <p class="hint">O texto que o cliente assina. Onde escrever <code>{{cliente}}</code>, <code>{{empresa}}</code>, <code>{{morada}}</code>, <code>{{telefone}}</code>, <code>{{total}}</code>, <code>{{material}}</code>, <code>{{maoDeObra}}</code>, <code>{{trabalhos}}</code> ou <code>{{data}}</code>, entram os dados de cada orçamento.</p>
+      <div id="cat-contrato"></div>
     </section>
 
     <section id="tab-obras" class="tab"></section>
@@ -351,6 +358,7 @@
 <script src="/js/shared.js"></script>
 <script>
 let catalog = { services: [], materials: [] };
+let modeloContrato = null;
 let companyName = 'Krona';
 let pedidos = [];
 let agenda = [];
@@ -426,6 +434,7 @@ async function loadAll(){
     const cfg = cfgR.value || {};
     catalog = cfg.catalogo || { services:[], materials:[] };
     companyName = (cfg.empresa && cfg.empresa.nome) || 'Krona';
+    modeloContrato = cfg.contrato || null;
   } else { falhas.push('catálogo'); }
 
   if(listR.status === 'fulfilled'){ pedidos = listR.value || []; }
@@ -590,6 +599,7 @@ function renderAll(){
   renderObras();
   renderAgenda();
   renderCatalogView();
+  renderModeloContrato();
   renderStats();
   if(detalheAbertoId == null){
     document.getElementById('detail-panel').innerHTML = detalheVazio();
@@ -978,6 +988,9 @@ function openConfirmedDetail(id){
       <div class="final final-falta"><span class="lbl">Falta receber</span><span class="num amt" id="ed-tot-falta">${fmt(t.total + calcExtras(p) - calcPago(p))}</span></div>
     </div>
 
+    <h2 class="section">Contrato</h2>
+    <div id="ed-contrato"></div>
+
     <div class="modal-actions">
       <button class="btn btn-danger" id="ed-delete">Eliminar</button>
       <button class="btn btn-ghost" id="ed-close">Fechar</button>
@@ -991,6 +1004,7 @@ function openConfirmedDetail(id){
   renderEditItems();
   renderEditExtras();
   renderEditPagamentos();
+  renderEditContrato(p);
 
   container.querySelector('#ed-ai-assist').addEventListener('click', async ()=>{
     const statusEl = container.querySelector('#ed-ai-status');
@@ -1276,6 +1290,103 @@ function renderEditExtras(){
   }
 }
 
+/* ---------------- contrato ---------------- */
+// Os números portugueses são escritos sem indicativo; o wa.me exige-o.
+function telefoneWhatsapp(valor){
+  const digitos = String(valor||'').replace(/\D/g,'');
+  if(!digitos) return '';
+  if(digitos.length === 9) return '351' + digitos;
+  return digitos;
+}
+
+function linkContrato(token){
+  return location.origin + '/contrato/' + token;
+}
+
+function copiarLink(link){
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(link)
+      .then(()=>showToast('Link do contrato copiado'))
+      .catch(()=>abrirLinkModal(link));
+  } else {
+    abrirLinkModal(link);
+  }
+}
+
+function renderEditContrato(p){
+  const el = document.getElementById('ed-contrato');
+  if(!el) return;
+
+  if(p.id == null){
+    el.innerHTML = '<p class="hint">Guarde o orçamento primeiro para poder criar o contrato.</p>';
+    return;
+  }
+
+  const assinado = p.contrato && p.contrato.assinadoEm;
+
+  if(assinado){
+    el.innerHTML = `
+      <div class="contrato-estado assinado">
+        <span class="tag tag-ok">Assinado</span>
+        <p>Por <strong>${escapeHtml(p.contrato.nome||'')}</strong> em ${fmtDataHora(p.contrato.assinadoEm)}.</p>
+      </div>
+      <div class="linha-contrato mt-2">
+        <button class="btn btn-sm" id="ct-abrir">Abrir / imprimir</button>
+        <button class="btn btn-sm" id="ct-copiar">Copiar link</button>
+      </div>
+      <p class="hint">O contrato assinado guarda o texto e os valores tal como estavam na altura. Alterar o orçamento agora não muda o que foi assinado.</p>
+    `;
+  } else if(p.contrato_token){
+    el.innerHTML = `
+      <div class="contrato-estado">
+        <span class="tag tag-pend">A aguardar assinatura</span>
+        <p class="hint">Envie o link ao cliente, ou abra-o aqui para ele assinar no seu tablet.</p>
+      </div>
+      <div class="linha-contrato mt-2">
+        <button class="btn btn-sm" id="ct-abrir">Abrir para assinar</button>
+        <button class="btn btn-sm" id="ct-copiar">Copiar link</button>
+        <button class="btn btn-sm btn-primary" id="ct-whatsapp">Enviar por WhatsApp</button>
+      </div>
+      <p class="hint">O contrato mostra os itens tal como estão gravados. Guarde as alterações antes de o enviar.</p>
+    `;
+  } else {
+    el.innerHTML = `
+      <p class="hint">Cria um contrato com os trabalhos e valores deste orçamento, para o cliente assinar no telemóvel ou aqui mesmo.</p>
+      <button class="btn btn-block btn-primary mt-2" id="ct-gerar">Criar contrato</button>
+    `;
+  }
+
+  const botaoGerar = el.querySelector('#ct-gerar');
+  if(botaoGerar) botaoGerar.addEventListener('click', async ()=>{
+    botaoGerar.disabled = true;
+    try{
+      const data = await apiSend('/api/pedidos/'+p.id+'/contrato', 'POST', {});
+      p.contrato_token = data.token;
+      renderEditContrato(p);
+      showToast('Contrato criado');
+    }catch(e){
+      botaoGerar.disabled = false;
+      showToast('Não foi possível criar o contrato');
+    }
+  });
+
+  const botaoAbrir = el.querySelector('#ct-abrir');
+  if(botaoAbrir) botaoAbrir.addEventListener('click', ()=>{
+    window.open(linkContrato(p.contrato_token), '_blank', 'noopener');
+  });
+
+  const botaoCopiar = el.querySelector('#ct-copiar');
+  if(botaoCopiar) botaoCopiar.addEventListener('click', ()=>copiarLink(linkContrato(p.contrato_token)));
+
+  const botaoWhatsapp = el.querySelector('#ct-whatsapp');
+  if(botaoWhatsapp) botaoWhatsapp.addEventListener('click', ()=>{
+    const texto = `Boa tarde${p.nome_cliente ? ' ' + p.nome_cliente : ''}. Segue o contrato dos trabalhos para ler e assinar: ` + linkContrato(p.contrato_token);
+    const numero = telefoneWhatsapp(p.telefone);
+    const base = numero ? 'https://wa.me/' + numero : 'https://wa.me/';
+    window.open(base + '?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+  });
+}
+
 /* ---------------- pagamentos ---------------- */
 function renderEditPagamentos(){
   const p = pedidos.find(x=>x.id===editingPedidoId);
@@ -1421,6 +1532,77 @@ document.getElementById('im-confirm').addEventListener('click', ()=>{
 });
 
 /* ---------------- catalogo ---------------- */
+// O modelo do contrato edita-se aqui: título, introdução, cláusulas e o
+// parágrafo de aceitação. Guarda-se só quando o utilizador carrega em Guardar.
+// `forcar` volta a desenhar mesmo com o formulário já montado. Sem isso, um
+// renderAll() a meio de uma edição apagava o que estava escrito por guardar.
+function renderModeloContrato(forcar){
+  const el = document.getElementById('cat-contrato');
+  if(!el) return;
+  if(!forcar && el.querySelector('#mc-titulo')) return;
+  const m = modeloContrato;
+  if(!m){
+    el.innerHTML = '<p class="hint">Modelo ainda não carregado.</p>';
+    return;
+  }
+
+  el.innerHTML = `
+    <div class="field"><label>Título</label><input id="mc-titulo" value="${escapeHtml(m.titulo||'')}"></div>
+    <div class="field"><label>Introdução</label><textarea id="mc-intro" rows="4">${escapeHtml(m.intro||'')}</textarea></div>
+    ${(m.clausulas||[]).map((cl, i)=>`
+      <div class="clausula-edit">
+        <div class="field">
+          <label>Cláusula ${i+1}</label>
+          <input data-mc-titulo="${i}" value="${escapeHtml(cl.titulo||'')}">
+        </div>
+        <div class="field"><textarea data-mc-texto="${i}" rows="5">${escapeHtml(cl.texto||'')}</textarea></div>
+        <button class="btn btn-sm btn-ghost" data-mc-apagar="${i}">Apagar cláusula</button>
+      </div>
+    `).join('')}
+    <button class="btn btn-block mt-2" id="mc-add">+ Adicionar cláusula</button>
+    <div class="field mt-2"><label>Parágrafo de aceitação</label><textarea id="mc-aceitacao" rows="4">${escapeHtml(m.aceitacao||'')}</textarea></div>
+  `;
+
+  el.querySelector('#mc-add').addEventListener('click', ()=>{
+    recolherModelo();
+    modeloContrato.clausulas = modeloContrato.clausulas || [];
+    modeloContrato.clausulas.push({ titulo:'Nova cláusula', texto:'' });
+    renderModeloContrato(true);
+  });
+
+  el.querySelectorAll('[data-mc-apagar]').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      recolherModelo();
+      modeloContrato.clausulas.splice(parseInt(b.dataset.mcApagar), 1);
+      renderModeloContrato(true);
+    });
+  });
+}
+
+// Lê os campos do formulário para o modelo em memória.
+function recolherModelo(){
+  const el = document.getElementById('cat-contrato');
+  if(!el || !modeloContrato) return;
+  const titulo = el.querySelector('#mc-titulo');
+  if(!titulo) return;
+  modeloContrato.titulo = titulo.value.trim();
+  modeloContrato.intro = el.querySelector('#mc-intro').value;
+  modeloContrato.aceitacao = el.querySelector('#mc-aceitacao').value;
+  modeloContrato.clausulas = (modeloContrato.clausulas||[]).map((cl, i)=>({
+    titulo: el.querySelector(`[data-mc-titulo="${i}"]`).value.trim(),
+    texto: el.querySelector(`[data-mc-texto="${i}"]`).value
+  }));
+}
+
+document.getElementById('btn-guardar-contrato').addEventListener('click', async ()=>{
+  if(!modeloContrato){ showToast('Modelo ainda não carregado'); return; }
+  recolherModelo();
+  try{
+    await apiSend('/api/config/contrato', 'PUT', modeloContrato);
+    showToast('Modelo do contrato guardado');
+  }catch(e){ showToast('Não foi possível guardar o modelo'); }
+});
+
 function renderCatalogView(){
   const svcEl = document.getElementById('cat-services');
   if(catalog.services.length===0){

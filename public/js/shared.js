@@ -7,6 +7,13 @@ function fmtDate(s) {
   return s ? new Date(s).toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 }
 
+function fmtDataHora(s) {
+  if (!s) return '';
+  const d = new Date(s);
+  return d.toLocaleDateString('pt-PT', { day: '2-digit', month: '2-digit', year: 'numeric' })
+    + ' às ' + d.toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' });
+}
+
 // Converte para numero. Campos numericos vindos do formulario publico
 // chegam como o cliente os enviou — foi por aqui que entrou um XSS.
 function num(v) {

@@ -1,0 +1,141 @@
+/* Folha do contrato: pensada para se ler no telemóvel e sair bem no papel. */
+
+.folha {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: var(--s-5) var(--s-4) var(--s-6);
+}
+
+.a-carregar { color: var(--dim); text-align: center; padding: var(--s-6) 0; }
+
+.cabecalho {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  padding-bottom: var(--s-4);
+  border-bottom: 2px solid var(--accent);
+  margin-bottom: var(--s-5);
+}
+.cabecalho img { width: 44px; height: 44px; border-radius: var(--r); }
+.cabecalho h1 { font-size: 20px; }
+.cabecalho .dim { font-size: 13px; margin-top: 2px; }
+
+.partes {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-4);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  margin-bottom: var(--s-5);
+}
+.partes div { display: flex; gap: var(--s-3); font-size: 14px; }
+.partes .rotulo { flex: 0 0 130px; color: var(--dim); font-weight: 500; }
+
+.trabalhos { margin-bottom: var(--s-5); }
+.trabalhos h2 { font-size: 16px; margin-bottom: var(--s-3); }
+.tabela-scroll { overflow-x: auto; }
+.trabalhos table { width: 100%; min-width: 420px; border-collapse: collapse; font-size: 14px; }
+.trabalhos th {
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dim);
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  padding: 0 var(--s-2) var(--s-2);
+  border-bottom: 1px solid var(--border);
+}
+.trabalhos td { padding: var(--s-2); border-bottom: 1px solid var(--border); vertical-align: top; }
+.trabalhos .dir { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.totais { margin-top: var(--s-4); }
+.totais div {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--dim);
+  padding: var(--s-1) 0;
+}
+.totais div span:last-child { color: var(--text); font-variant-numeric: tabular-nums; }
+.totais .grande {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  border-top: 1px solid var(--border);
+  margin-top: var(--s-2);
+  padding-top: var(--s-3);
+}
+.totais .dim { font-size: 12px; margin-top: var(--s-2); }
+
+.texto, .clausula { margin-bottom: var(--s-4); }
+.clausula h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: var(--s-2);
+}
+.texto p, .clausula p {
+  font-size: 14px;
+  line-height: 1.6;
+  margin-bottom: var(--s-2);
+  white-space: pre-wrap;
+}
+.aceitacao {
+  padding: var(--s-4);
+  background: var(--accent-soft);
+  border-radius: var(--r-lg);
+  margin-top: var(--s-5);
+}
+
+/* ---------------- assinatura ---------------- */
+.assinatura, .assinado {
+  margin-top: var(--s-5);
+  padding: var(--s-4);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.assinatura h3, .assinado h3 { font-size: 15px; margin-bottom: var(--s-2); }
+
+#quadro {
+  width: 100%;
+  height: 200px;
+  margin-top: var(--s-3);
+  background: #fff;
+  border: 1px dashed var(--border-strong, var(--dim));
+  border-radius: var(--r);
+  touch-action: none;
+  cursor: crosshair;
+}
+.linha-botoes { display: flex; justify-content: flex-end; margin: var(--s-2) 0 var(--s-3); }
+
+.rubrica {
+  max-width: 320px;
+  width: 100%;
+  border-bottom: 1px solid var(--text);
+  margin-bottom: var(--s-2);
+}
+
+.erro { color: var(--danger); font-size: 13px; margin-bottom: var(--s-2); }
+.erro[hidden] { display: none; }
+.aviso-legal { font-size: 12px; margin-top: var(--s-3); line-height: 1.5; }
+
+.accoes { margin-top: var(--s-4); }
+.accoes .btn { width: 100%; }
+
+@media (min-width: 768px) {
+  .accoes { display: flex; justify-content: flex-end; }
+  .accoes .btn { width: auto; }
+}
+
+/* ---------------- impressão ---------------- */
+@media print {
+  .nao-imprimir { display: none !important; }
+  body { background: #fff; }
+  .folha { max-width: none; padding: 0; }
+  .partes, .assinado { border: 1px solid #999; background: none; }
+  .aceitacao { background: none; border: 1px solid #999; }
+  .clausula { break-inside: avoid; }
+  .trabalhos table { break-inside: avoid; }
+  a[href]:after { content: ""; }
+}

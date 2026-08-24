@@ -119,7 +119,16 @@ function cookieSessao(valor, maxIdadeSegundos) {
   return partes.join('; ');
 }
 
+// O contrato é aberto pelo cliente a partir de um link, sem sessão: o código
+// no caminho é que dá acesso, e é longo e aleatório. Note-se que
+// POST /api/pedidos/:id/contrato — gerar o link — NÃO cai aqui, e continua a
+// exigir sessão: só a equipa cria contratos.
+function ehContratoPublico(req) {
+  return req.path.startsWith('/api/contrato/');
+}
+
 function ehPublica(req) {
+  if (ehContratoPublico(req)) return true;
   return ROTAS_PUBLICAS.some(r => r.metodo === req.method && r.caminho === req.path);
 }
 

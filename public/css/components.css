@@ -170,3 +170,29 @@ input[readonly]:focus, textarea[readonly]:focus {
   font-weight: 500;
   color: var(--text);
 }
+
+/* --- estado do contrato, no detalhe do orcamento --- */
+.contrato-estado {
+  padding: var(--s-3);
+  background: var(--accent-soft);
+  border-radius: var(--r);
+}
+.contrato-estado p { font-size: 13px; margin-top: var(--s-2); }
+.contrato-estado.assinado { background: var(--ok-bg); }
+.linha-contrato { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.linha-contrato .btn { flex: 1 1 auto; }
+
+/* --- editor do modelo do contrato --- */
+.clausula-edit {
+  padding: var(--s-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  margin-bottom: var(--s-3);
+}
+.clausula-edit textarea { min-height: 90px; }
+.hint code {
+  background: var(--accent-soft);
+  border-radius: var(--r-sm);
+  padding: 1px 4px;
+  font-size: 12px;
+}
