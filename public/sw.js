@@ -7,7 +7,15 @@
 //
 // Regras: /api nunca é guardado (dinheiro e dados têm de ser sempre frescos);
 // o resto é servido do aparelho e actualizado em segundo plano.
-const VERSAO = 'krona-v1';
+//
+// Cuidado importante: com o serviço adormecido, o alojamento responde 200 a
+// tudo — até a pedidos de CSS — com a própria página de espera dele. Guardar
+// essa resposta estragava a cópia local e a app passava a abrir na página
+// preta. Por isso só se guarda o que se reconhece como nosso.
+const VERSAO = 'krona-v2';
+
+// Todas as nossas páginas levam esta marca no <head>.
+const MARCA = 'name="krona-pagina"';
 
 const ESSENCIAIS = [
   '/css/tokens.css',
@@ -23,11 +31,13 @@ const ESSENCIAIS = [
 ];
 
 self.addEventListener('install', evento => {
+  // Passa pelo guardar() em vez do cache.add(), senão a página de espera do
+  // alojamento entrava aqui disfarçada de folha de estilo.
   evento.waitUntil(
-    caches.open(VERSAO)
-      // um ficheiro em falta não pode impedir a instalação de tudo o resto
-      .then(cache => Promise.allSettled(ESSENCIAIS.map(f => cache.add(f))))
-      .then(() => self.skipWaiting())
+    Promise.allSettled(ESSENCIAIS.map(async f => {
+      const resposta = await fetch(f, { cache: 'reload' });
+      await guardar(new Request(f), resposta);
+    })).then(() => self.skipWaiting())
   );
 });
 
@@ -39,11 +49,21 @@ self.addEventListener('activate', evento => {
   );
 });
 
+// É mesmo nosso, ou é a página de espera do alojamento a passar por tudo?
+async function ehNosso(resposta) {
+  const tipo = resposta.headers.get('content-type') || '';
+  if (!tipo.includes('text/html')) return true;   // css, js, imagens: só nós os servimos
+  const texto = await resposta.clone().text();
+  return texto.includes(MARCA);
+}
+
 // Guarda a resposta e devolve-a. Só respostas completas e nossas.
-function guardar(pedido, resposta) {
+async function guardar(pedido, resposta) {
   if (!resposta || !resposta.ok || resposta.type !== 'basic') return resposta;
+  if (!(await ehNosso(resposta))) return resposta;
   const copia = resposta.clone();
-  caches.open(VERSAO).then(cache => cache.put(pedido, copia));
+  const cache = await caches.open(VERSAO);
+  await cache.put(pedido, copia);
   return resposta;
 }
 
