@@ -62,9 +62,9 @@
       <button class="nav-item" data-tab="confirmados">Confirmados</button>
       <button class="nav-item" data-tab="agenda">Agenda</button>
       <button class="nav-item" data-tab="catalogo">Catálogo</button>
-      <button class="nav-item" data-tab="contrato">Contrato</button>
       <button class="nav-item" data-tab="obras">Obras feitas</button>
       <button class="nav-item" data-tab="stats">Estatística</button>
+      <button class="nav-item" data-tab="contrato">Contrato</button>
     </nav>
   </div>
 
@@ -80,9 +80,9 @@
     <button class="sidebar-item" data-tab="confirmados">Confirmados</button>
     <button class="sidebar-item" data-tab="agenda">Agenda</button>
     <button class="sidebar-item" data-tab="catalogo">Catálogo</button>
-    <button class="sidebar-item" data-tab="contrato">Contrato</button>
     <button class="sidebar-item" data-tab="obras">Obras feitas</button>
     <button class="sidebar-item" data-tab="stats">Estatística</button>
+    <button class="sidebar-item" data-tab="contrato">Contrato</button>
     <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button><button class="btn btn-ghost btn-block btn-sair" id="btn-sair-side">Sair</button></div>
   </aside>
 
@@ -110,6 +110,9 @@
 
     </section>
 
+
+    <section id="tab-obras" class="tab"></section>
+    <section id="tab-stats" class="tab"></section>
     <section id="tab-contrato" class="tab">
       <div class="section-head">
         <h2 class="section">Modelo do contrato</h2>
@@ -118,9 +121,6 @@
       <p class="hint">O texto que o cliente assina. Cada orçamento confirmado gera o seu contrato a partir daqui. Onde escrever <code>{{cliente}}</code>, <code>{{empresa}}</code>, <code>{{morada}}</code>, <code>{{telefone}}</code>, <code>{{total}}</code>, <code>{{material}}</code>, <code>{{maoDeObra}}</code>, <code>{{trabalhos}}</code> ou <code>{{data}}</code>, entram os dados desse orçamento.</p>
       <div id="cat-contrato"></div>
     </section>
-
-    <section id="tab-obras" class="tab"></section>
-    <section id="tab-stats" class="tab"></section>
   </main>
 
   <aside class="detail-panel" id="detail-panel"></aside>
