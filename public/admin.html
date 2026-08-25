@@ -62,6 +62,7 @@
       <button class="nav-item" data-tab="confirmados">Confirmados</button>
       <button class="nav-item" data-tab="agenda">Agenda</button>
       <button class="nav-item" data-tab="catalogo">Catálogo</button>
+      <button class="nav-item" data-tab="contrato">Contrato</button>
       <button class="nav-item" data-tab="obras">Obras feitas</button>
       <button class="nav-item" data-tab="stats">Estatística</button>
     </nav>
@@ -79,6 +80,7 @@
     <button class="sidebar-item" data-tab="confirmados">Confirmados</button>
     <button class="sidebar-item" data-tab="agenda">Agenda</button>
     <button class="sidebar-item" data-tab="catalogo">Catálogo</button>
+    <button class="sidebar-item" data-tab="contrato">Contrato</button>
     <button class="sidebar-item" data-tab="obras">Obras feitas</button>
     <button class="sidebar-item" data-tab="stats">Estatística</button>
     <div class="sidebar-foot"><button class="btn btn-block" id="btn-share-link-side">Link p/ cliente</button><button class="btn btn-ghost btn-block btn-sair" id="btn-sair-side">Sair</button></div>
@@ -106,11 +108,14 @@
       </div>
       <div id="cat-materials"></div>
 
+    </section>
+
+    <section id="tab-contrato" class="tab">
       <div class="section-head">
         <h2 class="section">Modelo do contrato</h2>
         <button class="btn btn-primary btn-sm" id="btn-guardar-contrato">Guardar modelo</button>
       </div>
-      <p class="hint">O texto que o cliente assina. Onde escrever <code>{{cliente}}</code>, <code>{{empresa}}</code>, <code>{{morada}}</code>, <code>{{telefone}}</code>, <code>{{total}}</code>, <code>{{material}}</code>, <code>{{maoDeObra}}</code>, <code>{{trabalhos}}</code> ou <code>{{data}}</code>, entram os dados de cada orçamento.</p>
+      <p class="hint">O texto que o cliente assina. Cada orçamento confirmado gera o seu contrato a partir daqui. Onde escrever <code>{{cliente}}</code>, <code>{{empresa}}</code>, <code>{{morada}}</code>, <code>{{telefone}}</code>, <code>{{total}}</code>, <code>{{material}}</code>, <code>{{maoDeObra}}</code>, <code>{{trabalhos}}</code> ou <code>{{data}}</code>, entram os dados desse orçamento.</p>
       <div id="cat-contrato"></div>
     </section>
 
@@ -123,7 +128,7 @@
 
 <div class="overlay" id="item-overlay">
   <div class="modal">
-    <h3>Adicionar item</h3>
+    <h3 id="im-titulo">Adicionar item</h3>
     <div class="field">
       <label>Serviço</label>
       <select id="im-service"></select>
@@ -293,7 +298,7 @@
 <!-- Modal Despesa -->
 <div class="overlay" id="despesa-overlay">
   <div class="modal">
-    <h2>Registar despesa</h2>
+    <h2 id="dp-titulo">Registar despesa</h2>
     <p class="dim" id="dp-saldo"></p>
     <div class="field">
       <label for="dp-nome">Em quê</label>
@@ -320,7 +325,7 @@
 <!-- Modal Custo extra -->
 <div class="overlay" id="pagamento-overlay">
   <div class="modal">
-    <h2>Registar pagamento</h2>
+    <h2 id="pg-titulo">Registar pagamento</h2>
     <p class="dim" id="pg-falta"></p>
     <div class="row2">
       <div class="field">
@@ -347,7 +352,7 @@
 
 <div class="overlay" id="custo-overlay">
   <div class="modal">
-    <h2>Custo extra</h2>
+    <h2 id="cx-titulo">Custo extra</h2>
     <p class="dim">Materiais novos, ajudantes, mão de obra extra — tudo o que não está nos itens.</p>
     <div class="field"><label for="cx-desc">Descrição</label>
       <input id="cx-desc" placeholder="Ex: Ajudante — 2 dias"></div>
@@ -607,6 +612,19 @@ brandNameEls.forEach(el=>{
     }
   });
 });
+
+/* ---------------- linhas que se editam ---------------- */
+// Cada linha das listas do orçamento abre o mesmo formulário com que foi
+// criada, já preenchida. Serve para o rato e para o teclado.
+function aoEditar(el, chaveDados, abrir){
+  el.querySelectorAll(`[data-${chaveDados.replace(/[A-Z]/g, m => '-' + m.toLowerCase())}]`).forEach(linha=>{
+    const idx = parseInt(linha.dataset[chaveDados]);
+    linha.addEventListener('click', ()=>abrir(idx));
+    linha.addEventListener('keydown', e=>{
+      if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); abrir(idx); }
+    });
+  });
+}
 
 /* ---------------- calc ---------------- */
 function calcExtras(p){
@@ -1226,11 +1244,19 @@ function openConfirmedDetail(id){
 
 /* ---------------- modal de custo extra ---------------- */
 const custoOverlay = document.getElementById('custo-overlay');
-function openCustoModal(){
-  document.getElementById('cx-desc').value = '';
-  document.getElementById('cx-tipo').value = 'mao_de_obra';
-  document.getElementById('cx-valor').value = '';
+let custoEmEdicao = null;
+
+function openCustoModal(idx){
+  custoEmEdicao = (typeof idx === 'number') ? idx : null;
+  const p = pedidos.find(x=>x.id===editingPedidoId);
+  const e = (custoEmEdicao !== null && p && p.extras) ? p.extras[custoEmEdicao] : null;
+
+  document.getElementById('cx-desc').value = e ? (e.nome || '') : '';
+  document.getElementById('cx-tipo').value = e ? (e.tipo || 'outro') : 'mao_de_obra';
+  document.getElementById('cx-valor').value = e ? num(e.valor) : '';
   document.getElementById('cx-erro').hidden = true;
+  document.getElementById('cx-titulo').textContent = e ? 'Editar custo' : 'Adicionar custo';
+  document.getElementById('cx-confirmar').textContent = e ? 'Guardar' : 'Adicionar';
   custoOverlay.classList.add('open');
 }
 document.getElementById('cx-cancelar').addEventListener('click', ()=>custoOverlay.classList.remove('open'));
@@ -1244,12 +1270,18 @@ document.getElementById('cx-confirmar').addEventListener('click', ()=>{
   }
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p.extras) p.extras = [];
-  p.extras.push({ id: uid(), nome, tipo, valor });
+  if(custoEmEdicao !== null && p.extras[custoEmEdicao]){
+    p.extras[custoEmEdicao] = { ...p.extras[custoEmEdicao], nome, tipo, valor };
+  } else {
+    p.extras.push({ id: uid(), nome, tipo, valor });
+  }
+  const editava = custoEmEdicao !== null;
+  custoEmEdicao = null;
   custoOverlay.classList.remove('open');
   renderEditExtras();
   renderEditPagamentos();
   updateEditTotals();
-  showToast('Custo adicionado');
+  showToast(editava ? 'Custo atualizado' : 'Custo adicionado');
 });
 
 /* ---------------- despesas ---------------- */
@@ -1267,7 +1299,7 @@ function renderEditDespesas(){
 
   el.innerHTML = despesas.map((d, idx)=>`
     <div class="item-row">
-      <div>
+      <div class="editavel" data-desp-edit="${idx}" role="button" tabindex="0" title="Tocar para editar">
         <div class="desc">${escapeHtml(d.nome || 'Despesa')}</div>
         <div class="sub">${fmtDate(d.data)}</div>
       </div>
@@ -1278,6 +1310,7 @@ function renderEditDespesas(){
     </div>
   `).join('');
 
+  aoEditar(el, 'despEdit', idx => abrirDespesaModal(idx));
   el.querySelectorAll('[data-desp-idx]').forEach(b=>{
     b.addEventListener('click', ()=>{
       const p2 = pedidos.find(x=>x.id===editingPedidoId);
@@ -1291,17 +1324,23 @@ function renderEditDespesas(){
 /* ---------------- modal de despesa ---------------- */
 const despesaOverlay = document.getElementById('despesa-overlay');
 
-function abrirDespesaModal(){
+let despesaEmEdicao = null;
+
+function abrirDespesaModal(idx){
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p) return;
+  despesaEmEdicao = (typeof idx === 'number') ? idx : null;
+  const existente = (despesaEmEdicao !== null && p.despesas) ? p.despesas[despesaEmEdicao] : null;
   const naMao = calcNaMao(p);
   document.getElementById('dp-saldo').textContent = naMao < 0
     ? `Neste momento está ${fmt(naMao)} — gastou mais do que recebeu.`
     : `Tem ${fmt(naMao)} na mão desta obra.`;
-  document.getElementById('dp-nome').value = '';
-  document.getElementById('dp-valor').value = '';
-  document.getElementById('dp-data').value = new Date().toISOString().slice(0,10);
+  document.getElementById('dp-nome').value = existente ? (existente.nome || '') : '';
+  document.getElementById('dp-valor').value = existente ? num(existente.valor) : '';
+  document.getElementById('dp-data').value = (existente && existente.data) || new Date().toISOString().slice(0,10);
   document.getElementById('dp-erro').hidden = true;
+  document.getElementById('dp-titulo').textContent = existente ? 'Editar despesa' : 'Registar despesa';
+  document.getElementById('dp-confirmar').textContent = existente ? 'Guardar' : 'Registar';
   despesaOverlay.classList.add('open');
 }
 
@@ -1315,24 +1354,30 @@ document.getElementById('dp-confirmar').addEventListener('click', ()=>{
   }
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p.despesas) p.despesas = [];
-  p.despesas.push({
-    id: uid(),
-    nome,
-    valor,
-    data: document.getElementById('dp-data').value || new Date().toISOString().slice(0,10)
-  });
+  const dados = { nome, valor, data: document.getElementById('dp-data').value || new Date().toISOString().slice(0,10) };
+  const editava = despesaEmEdicao !== null && p.despesas[despesaEmEdicao];
+  if(editava){
+    p.despesas[despesaEmEdicao] = { ...p.despesas[despesaEmEdicao], ...dados };
+  } else {
+    p.despesas.push({ id: uid(), ...dados });
+  }
+  despesaEmEdicao = null;
   despesaOverlay.classList.remove('open');
   renderEditDespesas();
   updateEditTotals();
-  showToast('Despesa registada');
+  showToast(editava ? 'Despesa atualizada' : 'Despesa registada');
 });
 
 /* ---------------- modal de pagamento ---------------- */
 const pagamentoOverlay = document.getElementById('pagamento-overlay');
 
-function abrirPagamentoModal(){
+let pagamentoEmEdicao = null;
+
+function abrirPagamentoModal(idx){
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p) return;
+  pagamentoEmEdicao = (typeof idx === 'number') ? idx : null;
+  const existente = (pagamentoEmEdicao !== null && p.pagamentos) ? p.pagamentos[pagamentoEmEdicao] : null;
   // o que falta conta com os itens que estão a ser editados, não com os gravados
   const totalAtual = calcTotals(draftItems).total + calcExtras(p);
   const falta = Math.max(0, totalAtual - calcPago(p));
@@ -1340,12 +1385,14 @@ function abrirPagamentoModal(){
   document.getElementById('pg-falta').textContent = falta > 0
     ? `Falta receber ${fmt(falta)} de ${fmt(totalAtual)}.`
     : 'Este orçamento já está totalmente pago.';
-  document.getElementById('pg-valor').value = '';
-  document.getElementById('pg-data').value = new Date().toISOString().slice(0,10);
-  document.getElementById('pg-nota').value = '';
+  document.getElementById('pg-valor').value = existente ? num(existente.valor) : '';
+  document.getElementById('pg-data').value = (existente && existente.data) || new Date().toISOString().slice(0,10);
+  document.getElementById('pg-nota').value = existente ? (existente.nota || '') : '';
   document.getElementById('pg-erro').hidden = true;
-  document.getElementById('pg-tudo').hidden = falta <= 0;
+  document.getElementById('pg-tudo').hidden = falta <= 0 || !!existente;
   document.getElementById('pg-tudo').dataset.valor = falta.toFixed(2);
+  document.getElementById('pg-titulo').textContent = existente ? 'Editar pagamento' : 'Registar pagamento';
+  document.getElementById('pg-confirmar').textContent = existente ? 'Guardar' : 'Registar';
   pagamentoOverlay.classList.add('open');
 }
 
@@ -1361,16 +1408,22 @@ document.getElementById('pg-confirmar').addEventListener('click', ()=>{
   }
   const p = pedidos.find(x=>x.id===editingPedidoId);
   if(!p.pagamentos) p.pagamentos = [];
-  p.pagamentos.push({
-    id: uid(),
+  const dados = {
     valor,
     data: document.getElementById('pg-data').value || new Date().toISOString().slice(0,10),
     nota: document.getElementById('pg-nota').value.trim()
-  });
+  };
+  const editava = pagamentoEmEdicao !== null && p.pagamentos[pagamentoEmEdicao];
+  if(editava){
+    p.pagamentos[pagamentoEmEdicao] = { ...p.pagamentos[pagamentoEmEdicao], ...dados };
+  } else {
+    p.pagamentos.push({ id: uid(), ...dados });
+  }
+  pagamentoEmEdicao = null;
   pagamentoOverlay.classList.remove('open');
   renderEditPagamentos();
   updateEditTotals();
-  showToast('Pagamento registado');
+  showToast(editava ? 'Pagamento atualizado' : 'Pagamento registado');
 });
 
 function renderEditItems(){
@@ -1383,7 +1436,7 @@ function renderEditItems(){
       const c = calcItem(it);
       const s = catalog.services.find(s=>s.id===it.serviceId);
       return `<div class="item-row">
-        <div>
+        <div class="editavel" data-item-edit="${idx}" role="button" tabindex="0" title="Tocar para editar">
           <div class="desc">${it.comodo ? `<span class="etiqueta-comodo">${escapeHtml(it.comodo)}</span>` : ``}${escapeHtml(it.desc || (s?s.name:'Item'))}</div>
           <div class="sub">${it.unit ? num(it.quantity)+' '+escapeHtml(it.unit)+' · ' : 'Empreitada · '}material ${fmt(c.materialCost)} + mão de obra ${fmt(c.laborCost)}</div>
         </div>
@@ -1393,6 +1446,7 @@ function renderEditItems(){
         </div>
       </div>`;
     }).join('');
+    aoEditar(el, 'itemEdit', idx => openItemModal(idx));
     el.querySelectorAll('.del').forEach(b=>{
       b.addEventListener('click', ()=>{
         draftItems.splice(parseInt(b.dataset.idx),1);
@@ -1438,7 +1492,7 @@ function renderEditExtras(){
   } else {
     el.innerHTML = extras.map((e, idx)=>`
       <div class="item-row">
-        <div>
+        <div class="editavel" data-extra-edit="${idx}" role="button" tabindex="0" title="Tocar para editar">
           <div class="desc">${escapeHtml(e.nome || 'Custo')}</div>
           <div class="sub">${escapeHtml(TIPO_EXTRA_LABELS[e.tipo] || e.tipo || 'Outro')}</div>
         </div>
@@ -1448,6 +1502,7 @@ function renderEditExtras(){
         </div>
       </div>
     `).join('');
+    aoEditar(el, 'extraEdit', idx => openCustoModal(idx));
     el.querySelectorAll('[data-extra-idx]').forEach(b=>{
       b.addEventListener('click', ()=>{
         const p2 = pedidos.find(x=>x.id===editingPedidoId);
@@ -1571,7 +1626,7 @@ function renderEditPagamentos(){
 
   el.innerHTML = pagamentos.map((x, idx)=>`
     <div class="item-row">
-      <div>
+      <div class="editavel" data-pag-edit="${idx}" role="button" tabindex="0" title="Tocar para editar">
         <div class="desc">${fmt(parseFloat(x.valor)||0)}</div>
         <div class="sub">${fmtDate(x.data)}${x.nota ? ' · '+escapeHtml(x.nota) : ''}</div>
       </div>
@@ -1581,6 +1636,7 @@ function renderEditPagamentos(){
     </div>
   `).join('');
 
+  aoEditar(el, 'pagEdit', idx => abrirPagamentoModal(idx));
   el.querySelectorAll('[data-pag-idx]').forEach(b=>{
     b.addEventListener('click', ()=>{
       const p2 = pedidos.find(x=>x.id===editingPedidoId);
@@ -1652,11 +1708,42 @@ function applyMaterialDefaults(){
 imService.addEventListener('change', populateMaterialSelect);
 imMaterial.addEventListener('change', applyMaterialDefaults);
 
-function openItemModal(){
+// idx a null cria um item novo; com um número, edita o que já lá está.
+let itemEmEdicao = null;
+
+function openItemModal(idx){
+  itemEmEdicao = (typeof idx === 'number') ? idx : null;
+  const it = itemEmEdicao !== null ? draftItems[itemEmEdicao] : null;
+
   populateServiceSelect();
+  if(it && it.serviceId){
+    // O servico pode ter sido apagado do catalogo depois de o item ser feito.
+    // Sem isto, o select caia no primeiro servico da lista e o item mudava de
+    // unidade e de preco sozinho — dinheiro alterado sem ninguem mandar.
+    if(!catalog.services.some(sv=>sv.id===it.serviceId)){
+      imService.insertAdjacentHTML('afterbegin',
+        `<option value="${escapeHtml(it.serviceId)}">${escapeHtml(it.desc || 'Serviço já não está no catálogo')}</option>`);
+    }
+    imService.value = it.serviceId;
+  }
   populateMaterialSelect();
-  document.getElementById('im-desc').value='';
-  document.getElementById('im-qty').value='';
+  if(it){
+    // depois de povoar os selects, senão os valores por omissão do catálogo
+    // apagavam o que a pessoa tinha escrito neste item
+    if(it.materialId) imMaterial.value = it.materialId;
+    else imMaterial.value = '__custom__';
+    applyMaterialDefaults();
+    document.getElementById('im-desc').value = it.desc || '';
+    document.getElementById('im-qty').value = num(it.quantity);
+    document.getElementById('im-price').value = num(it.unitPrice);
+    document.getElementById('im-labor').value = num(it.laborUnitPrice);
+  } else {
+    document.getElementById('im-desc').value='';
+    document.getElementById('im-qty').value='';
+  }
+
+  document.getElementById('im-titulo').textContent = it ? 'Editar item' : 'Adicionar item';
+  document.getElementById('im-confirm').textContent = it ? 'Guardar' : 'Adicionar';
   itemOverlay.classList.add('open');
 }
 document.getElementById('im-cancel').addEventListener('click', ()=>itemOverlay.classList.remove('open'));
@@ -1676,6 +1763,7 @@ document.getElementById('im-search-price').addEventListener('click', ()=>{
 
 document.getElementById('im-confirm').addEventListener('click', ()=>{
   const s = catalog.services.find(s=>s.id===imService.value);
+  const antigo = (itemEmEdicao !== null) ? draftItems[itemEmEdicao] : null;
   const fechado = !!(s && s.precoFechado);
   const desc = document.getElementById('im-desc').value.trim();
   const price = parseFloat(document.getElementById('im-price').value);
@@ -1688,14 +1776,22 @@ document.getElementById('im-confirm').addEventListener('click', ()=>{
   if(!fechado && (!qty || qty<=0)){ showToast('Indique a quantidade'); return; }
   if(isNaN(price) || price<0){ showToast(fechado ? 'Indique o valor do material' : 'Indique o preço unitário'); return; }
 
-  draftItems.push({
-    id: uid(), serviceId: imService.value,
+  const dados = {
+    serviceId: imService.value,
     materialId: fechado ? null : (imMaterial.value==='__custom__' ? null : imMaterial.value),
     desc: desc || (s ? s.name : ''),
-    quantity: qty, unit: fechado ? '' : (s ? s.unit : ''), unitPrice: price,
+    quantity: qty, unit: fechado ? '' : (s ? s.unit : (antigo ? antigo.unit : '')), unitPrice: price,
     laborUnitPrice: isNaN(labor) ? 0 : labor,
     laborPercent: 0
-  });
+  };
+
+  if(antigo){
+    // o id e a divisão são do item, não do formulário: mantêm-se
+    draftItems[itemEmEdicao] = { ...antigo, ...dados };
+  } else {
+    draftItems.push({ id: uid(), ...dados });
+  }
+  itemEmEdicao = null;
   itemOverlay.classList.remove('open');
   renderEditItems();
 });
