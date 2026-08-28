@@ -15,10 +15,38 @@ function limpar(agora) {
   }
 }
 
+// Um endereço só, limpo, para servir de chave. Recusa lixo e trunca, para o
+// mapa não crescer com valores inventados por quem chama.
+function limparEndereco(valor) {
+  if (typeof valor !== 'string') return null;
+  const primeiro = valor.split(',')[0].trim();
+  if (!primeiro || primeiro.length > 45) return null;
+  return /^[0-9a-fA-F:.]+$/.test(primeiro) ? primeiro : null;
+}
+
+/**
+ * Quem está do outro lado.
+ *
+ * Isto pareceu resolvido durante muito tempo e não estava: em produção há
+ * dois intermediários à frente da app — a Cloudflare que serve o Render, e um
+ * proxy interno do Render. Com `trust proxy 1`, o req.ip do express é o do
+ * proxy interno, que muda de pedido para pedido. Resultado: cada pedido
+ * abria um contador novo e o travão nunca chegava a travar. Confirmado nos
+ * registos do servidor:
+ *
+ *   xff = 188.83.114.11, 172.70.246.123, 10.197.67.155
+ *   req.ip = 10.197.67.155   (e no pedido seguinte já era 10.198.253.251)
+ *
+ * O cf-connecting-ip é escrito pela Cloudflare à entrada, por cima do que o
+ * cliente tenha mandado, e traz o endereço verdadeiro. É esse que se usa; o
+ * req.ip fica como recurso para quando não houver Cloudflare à frente, como
+ * acontece a correr isto localmente.
+ */
 function origem(req) {
-  // Atrás do proxy do Render o endereço real vem no X-Forwarded-For; o
-  // trust proxy da app faz o express.ip resolvê-lo.
-  return req.ip || (req.socket && req.socket.remoteAddress) || 'desconhecido';
+  return limparEndereco(req.headers && req.headers['cf-connecting-ip'])
+    || limparEndereco(req.ip)
+    || limparEndereco(req.socket && req.socket.remoteAddress)
+    || 'desconhecido';
 }
 
 /**
@@ -33,10 +61,6 @@ function limitar({ nome, max, janelaMs, soFalhas = false, mensagem }) {
     limpar(agora);
 
     const chave = nome + '|' + origem(req);
-    if (process.env.DIAGNOSTICO_LIMITES) {
-      console.log('[limites]', nome, 'chave=', chave, 'xff=', req.headers['x-forwarded-for'], 'ip=', req.ip,
-        'cf=', req.headers['cf-connecting-ip'], 'true-client=', req.headers['true-client-ip'], 'real=', req.headers['x-real-ip']);
-    }
     let registo = REGISTOS.get(chave);
     if (!registo || registo.janelaAte <= agora) {
       registo = { contagem: 0, janelaAte: agora + janelaMs };

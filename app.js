@@ -436,7 +436,10 @@ function createApp(pool) {
 
   /* ---------------- IA (Google Gemini — camada gratuita) ---------------- */
   async function callGemini(system, userText, maxTokens) {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    // O gemini-2.5-flash-lite foi retirado e passou a responder com erro; a
+    // sugestao automatica estava a falhar em producao sem ninguem dar por isso.
+    const modelo = process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite';
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const r = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
