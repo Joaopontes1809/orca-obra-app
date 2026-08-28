@@ -33,6 +33,9 @@ function limitar({ nome, max, janelaMs, soFalhas = false, mensagem }) {
     limpar(agora);
 
     const chave = nome + '|' + origem(req);
+    if (process.env.DIAGNOSTICO_LIMITES) {
+      console.log('[limites]', nome, 'chave=', chave, 'xff=', req.headers['x-forwarded-for'], 'ip=', req.ip, 'socket=', req.socket && req.socket.remoteAddress);
+    }
     let registo = REGISTOS.get(chave);
     if (!registo || registo.janelaAte <= agora) {
       registo = { contagem: 0, janelaAte: agora + janelaMs };
