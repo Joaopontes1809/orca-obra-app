@@ -61,7 +61,14 @@ function registarRotas(app, pool, limitar) {
   });
 
   // --- público: ler o contrato pelo código ---
-  app.get('/api/contrato/:token', async (req, res) => {
+  // O código não se adivinha, mas o travão evita que alguém martele a base
+  // de dados por esta porta, que é a única aberta sem sessão.
+  app.get('/api/contrato/:token',
+    limitar({
+      nome: 'ver-contrato', max: 60, janelaMs: 60 * 60 * 1000,
+      mensagem: 'Demasiados pedidos. Tente daqui a pouco.'
+    }),
+    async (req, res) => {
     try {
       const r = await pool.query(
         'SELECT nome_cliente, telefone, morada, nome_orcamento, itens, contrato FROM pedidos WHERE contrato_token = $1',
@@ -77,7 +84,8 @@ function registarRotas(app, pool, limitar) {
       console.error(e);
       res.status(500).json({ error: 'erro ao carregar o contrato' });
     }
-  });
+    }
+  );
 
   // --- público: assinar ---
   app.post('/api/contrato/:token/assinar',

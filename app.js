@@ -194,9 +194,25 @@ function limparItens(itens) {
   }));
 }
 
+// A lista de servicos chega no corpo do pedido publico e vai parar ao prompt
+// da IA. Sem corte, uma lista enorme multiplicava o custo de cada chamada.
+function listaDeServicos(valor) {
+  if (!Array.isArray(valor)) return [];
+  return valor.slice(0, 60).map(s => ({
+    name: texto(s && s.name, 80),
+    unit: texto(s && s.unit, 20)
+  }));
+}
+
 function createApp(pool) {
   const app = express();
-  app.use(express.json());
+  // O corpo maior que existe e uma assinatura de contrato, limitada a 200 kB
+  // no contrato.js. Sem um limite acima desse, o express cortava o pedido
+  // antes com um 413 em HTML e a validacao propria nunca chegava a correr —
+  // e sem limite nenhum qualquer pessoa podia enviar corpos enormes.
+  app.use(express.json({ limit: '256kb' }));
+  // nao anunciar a framework a quem estiver a procurar alvos
+  app.disable('x-powered-by');
   // atras do proxy do Render, para o req.ip ser o do cliente e nao o do proxy
   app.set('trust proxy', 1);
 
@@ -443,13 +459,20 @@ function createApp(pool) {
   }
 
   // cliente: descreve em texto livre, IA sugere os itens do pedido
-  app.post('/api/ai/parse-request', async (req, res) => {
+  //
+  // Esta rota e publica e cada chamada e paga por nos. Sem travao, quem
+  // tivesse o link do formulario podia gastar a conta da IA num ciclo.
+  app.post('/api/ai/parse-request', limitar({
+    nome: 'ia-cliente', max: 20, janelaMs: 60 * 60 * 1000,
+    mensagem: 'Demasiados pedidos à assistente. Tente daqui a pouco.'
+  }), async (req, res) => {
     try {
       if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'IA não configurada' });
-      const { texto, services } = req.body;
-      if (!texto || !texto.trim()) return res.status(400).json({ error: 'escreva o que pretende primeiro' });
+      const textoPedido = texto(req.body && req.body.texto, 2000);
+      const services = listaDeServicos(req.body && req.body.services);
+      if (!textoPedido.trim()) return res.status(400).json({ error: 'escreva o que pretende primeiro' });
 
-      const serviceList = (services || []).map(s => `- ${s.name} (unidade: ${s.unit})`).join('\n');
+      const serviceList = services.map(s => `- ${s.name} (unidade: ${s.unit})`).join('\n');
       const system = `És um assistente que interpreta pedidos de reforma/construção em português de Portugal e devolve APENAS um array JSON, sem texto antes ou depois.
 Serviços disponíveis:
 ${serviceList}
@@ -460,7 +483,7 @@ Para cada trabalho identificado no texto do cliente, devolve um objeto com:
 Exemplo de resposta: [{"servico":"Pintura","material":"tinta branca","quantidade":20},{"servico":"Pavimento","material":"","quantidade":null}]
 Se não conseguires identificar nenhum trabalho, devolve [].`;
 
-      const text = await callGemini(system, texto, 600);
+      const text = await callGemini(system, textoPedido, 600);
       const parsed = extractJson(text) || [];
       res.json({ itens: parsed });
     } catch (e) {
@@ -473,9 +496,10 @@ Se não conseguires identificar nenhum trabalho, devolve [].`;
   app.post('/api/ai/assist-admin', async (req, res) => {
     try {
       if (!process.env.GEMINI_API_KEY) return res.status(503).json({ error: 'IA não configurada' });
-      const { descricao, observacoes_cliente, tipo_servico, services } = req.body;
+      const { descricao, observacoes_cliente, tipo_servico } = req.body;
+      const services = listaDeServicos(req.body && req.body.services);
 
-      const serviceList = (services || []).map(s => `- ${s.name} (unidade: ${s.unit})`).join('\n');
+      const serviceList = services.map(s => `- ${s.name} (unidade: ${s.unit})`).join('\n');
       const system = `És um assistente interno de uma empresa de remodelação em Portugal. Com base na descrição de um pedido de cliente, devolve APENAS um objeto JSON, sem texto antes ou depois, no formato:
 {"resumo": "resumo curto e profissional em 1-2 frases para uso interno da equipa", "itens_sugeridos": [{"servico":"nome exato da lista","material":"palpite curto ou vazio","quantidade": numero ou null}]}
 Serviços disponíveis:
@@ -496,9 +520,12 @@ Observações do cliente: ${observacoes_cliente || 'nenhuma'}`;
   });
 
   /* ---------------- pesquisa de preços (SerpApi) ---------------- */
-  app.get('/api/pesquisar-preco', async (req, res) => {
+  app.get('/api/pesquisar-preco', limitar({
+    nome: 'precos', max: 30, janelaMs: 60 * 60 * 1000,
+    mensagem: 'Demasiadas pesquisas seguidas. Tente daqui a pouco.'
+  }), async (req, res) => {
     try {
-      const q = (req.query.q || '').toString().trim();
+      const q = texto(req.query.q, 120).trim();
       if (!q) return res.status(400).json({ error: 'termo de pesquisa em falta' });
       if (!process.env.SERPAPI_KEY) return res.status(503).json({ error: 'pesquisa de preços não configurada' });
 
@@ -525,6 +552,26 @@ Observações do cliente: ${observacoes_cliente || 'nenhuma'}`;
       console.error(e);
       res.status(500).json({ error: 'erro ao pesquisar preços' });
     }
+  });
+
+  // Rede de seguranca no fim: qualquer erro que escape as rotas sai daqui em
+  // JSON e sem detalhes. Sem isto, o express respondia com a pagina de erro
+  // dele, que em certas configuracoes leva o rasto da pilha — caminhos de
+  // ficheiros e nomes internos que nao interessam a quem esta do outro lado.
+  app.use('/api', (req, res) => {
+    res.status(404).json({ error: 'rota não encontrada' });
+  });
+  app.use((err, req, res, next) => {
+    // corpo maior que o limite: vale a pena dizer porque, para nao parecer
+    // uma avaria
+    if (err && (err.type === 'entity.too.large' || err.status === 413)) {
+      return res.status(413).json({ error: 'pedido demasiado grande' });
+    }
+    if (err && (err.type === 'entity.parse.failed' || err.status === 400)) {
+      return res.status(400).json({ error: 'pedido mal formado' });
+    }
+    console.error(err);
+    res.status(500).json({ error: 'erro no servidor' });
   });
 
   return app;
